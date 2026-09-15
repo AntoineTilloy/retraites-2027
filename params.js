@@ -7,8 +7,9 @@ const P = {
   hausseSpontanee: 12,       // Md€ : hausse spontanée des dépenses des régimes de base (Martinot ; fourchette 10,5 à 12)
   inflation: 2.1,            // % : revalorisation légale prévue au 1er janvier 2027 (Bercy sept. 2026 ; CCSS mai 2026 : 1,6)
   inflationFourchette: [1.6, 2.1],
-  revaloComplementaire: 1.6,  // % : revalorisation Agirc-Arrco attendue au 1er novembre 2026 (inflation − 0,4 point ; fourchette 1,2 à 2,0), hors du levier
-  revaloComplementaireFourchette: [1.2, 2.0],
+  revaloComplementaire: 2.1,  // % : la complémentaire est supposée suivre l'inflation, pour isoler l'effet des leviers.
+  revaloAgircAttendue: 1.6,   // % : en réalité, revalorisation Agirc-Arrco attendue au 1er novembre 2026 (inflation − 0,4 point ; fourchette 1,2 à 2,0)
+  revaloAgircFourchette: [1.2, 2.0],
 
   // Levier 1 : revalorisation des pensions de base
   mdParPoint: 2.9,           // Md€ par point de revalorisation en moins : 6 Md€ pour 2,1 % selon Bercy

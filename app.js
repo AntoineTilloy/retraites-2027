@@ -226,7 +226,7 @@
       const basePct = state.revalo >= P.inflation ? `+${pct(P.inflation)}` : state.revalo === 0 ? 'gel' : `+${pct(state.revalo)}`;
       const protege = state.seuil > 0 && p.membres.every((m) => m.brut < state.seuil);
       const aCompl = p.membres.some((m) => m.compl > 0);
-      const whyRevalo = `pension de base ${protege && state.revalo < P.inflation ? `+${pct(P.inflation)}, protégée par le seuil` : basePct}${aCompl ? ` · complémentaire +${pct(P.revaloComplementaire)}` : ''}`;
+      const whyRevalo = `pension de base ${protege && state.revalo < P.inflation ? `+${pct(P.inflation)}, protégée par le seuil` : basePct}${aCompl && state.revalo < P.inflation && !protege ? ` · complémentaire +${pct(P.revaloComplementaire)}, hors du levier` : ''}`;
       const whyAbatt = state.abatt >= P.abatt.plafond ? '' : Math.abs(r.abatt) < 0.5 ? (r.ref.ir > 0 ? 'impôt inchangé' : r.ref.irAvantReduction > 0 ? 'la réduction d\'impôt EHPAD absorbe la hausse' : 'non imposable, donc aucun effet') : 'impôt sur le revenu plus élevé';
       const whyCsg = state.csg <= P.csg.tauxPlein ? '' : Math.abs(r.csg) < 0.5 ? `au taux de ${pct(r.tauxCsg)}, pas au taux plein` : 'CSG plus élevée, en partie déductible';
       const why = (t) => (t ? `<span class="why">${t}</span>` : '');
@@ -283,7 +283,7 @@
       ['Objectif d\'économies 2027', `${P.objectif} Md€`, src('amiel')],
       ['Hausse spontanée des dépenses des régimes de base', `${P.hausseSpontanee} Md€ (fourchette 10,5 à 12)`, src('martinot') + ' ; ' + src('ccss')],
       ['Revalorisation légale prévue au 1er janvier 2027', `${pct(P.inflation)} (${f(P.inflationFourchette).replace('fourchette', 'fourchette').replace(/(\d),(\d)/g, '$1,$2')} %)`, src('amiel') + ' ; ' + src('ccss')],
-      ['Revalorisation Agirc-Arrco attendue en novembre 2026', `${pct(P.revaloComplementaire)} (fourchette ${fmt(P.revaloComplementaireFourchette[0])} à ${fmt(P.revaloComplementaireFourchette[1])} %)`, src('agirc')],
+      ['Revalorisation de la complémentaire dans le simulateur', `${pct(P.revaloComplementaire)} (comme l'inflation) ; attendue en réalité : ${pct(P.revaloAgircAttendue)}, fourchette ${fmt(P.revaloAgircFourchette[0])} à ${fmt(P.revaloAgircFourchette[1])} %`, src('agirc')],
       ['Économie par point de revalorisation en moins', `${fmt(P.mdParPoint)} Md€ (${f(P.mdParPointFourchette)})`, src('amiel') + ' ; ' + src('rexecode') + ' ; ' + src('plfss2026')],
       ['Part de l\'économie conservée si l\'on protège les pensions sous 1 400 € / 2 000 €', `${Math.round(P.partMasseAuDessus[1400] * 100)} % / ${Math.round(P.partMasseAuDessus[2000] * 100)} % [estimation]`, src('rexecode') + ' ; ' + src('plfss2026')],
       ['Coût actuel de l\'abattement de 10 %', `${fmt(P.abatt.cout)} Md€ en 2025, ${fmt(P.abatt.beneficiaires)} millions de ménages`, src('voies')],
@@ -317,7 +317,7 @@
       <details><summary>Comment sont calculés les effets sur les retraités</summary>
         <ul>
           <li>Pour chaque foyer, on calcule le revenu net annuel après CSG, CRDS, CASA, cotisation maladie de 1 % sur la complémentaire et impôt sur le revenu (abattement de 10 %, abattement des plus de 65 ans, barème, quotient familial, décote, réduction d'impôt EHPAD). Le point de départ est la pension nette de 2026. Les trois lignes se lisent dans l'ordre : d'abord la revalorisation, puis l'abattement, puis la CSG ; elles s'additionnent exactement au total.</li>
-          <li>La complémentaire (Agirc-Arrco) est supposée revalorisée de ${pct(P.revaloComplementaire)} en novembre 2026, selon la règle de l'accord de 2023 (inflation moins 0,4 point) ; elle ne dépend pas du curseur.</li>
+          <li>La complémentaire (Agirc-Arrco) ne dépend pas du curseur : elle est supposée suivre l'inflation, pour isoler l'effet des leviers. En réalité, sa règle (accord de 2023 : inflation moins 0,4 point) devrait donner environ ${pct(P.revaloAgircAttendue)} en novembre 2026, soit une petite perte supplémentaire sur cette part, quel que soit le choix du gouvernement.</li>
           <li>La petite ligne sous chaque total compare l'évolution de la pension nette à l'inflation de ${pct(P.inflation)} : c'est l'évolution du pouvoir d'achat.</li>
           <li>La situation 2026 est calculée avec les règles 2026 ; la situation 2027 avec le barème et les plafonds indexés de 2 % comme annoncé, les textes pour 2027 n'étant pas encore déposés. Ainsi, une pension indexée sur l'inflation garde à peu près son pouvoir d'achat, comme en réalité.</li>
           <li>La revalorisation ne s'applique qu'à la pension de base de chacun. Le seuil de protection s'apprécie sur la pension brute totale de la personne.</li>

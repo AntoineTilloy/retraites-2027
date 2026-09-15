@@ -71,6 +71,7 @@ input[type=range]{width:100%;margin:8px 0 2px;accent-color:var(--accent);height:
 .impacts li.total{font-weight:700;border-top:2px solid var(--ink)}
 .impacts .amt{font-variant-numeric:tabular-nums;white-space:nowrap}
 .impacts .amt.neg{color:var(--bad)}
+.impacts .amt.pos{color:var(--ok)}
 .impacts .amt.zero{color:var(--muted)}
 .impacts .why{display:block;font-size:.78rem;color:var(--muted);font-weight:400}
 .note{font-size:.8rem;color:var(--muted);margin-top:8px}

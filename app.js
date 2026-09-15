@@ -17,34 +17,36 @@
   }
 
   /* ---------- Micro : revenu net d'un foyer ---------- */
-  function impot(revenu, parts) {
+  // k = 1 pour 2027 ; 1 / indexBareme pour reconstituer les paramètres 2026 (l'inflation indexe le barème, pas seulement les pensions)
+  function impot(revenu, parts, k = 1) {
     const q = Math.max(0, revenu) / parts;
     let ir = 0, prev = 0;
-    for (const [lim, t] of P.ir.tranches) { if (q > prev) ir += (Math.min(q, lim) - prev) * t; prev = lim; }
+    for (const [lim, t] of P.ir.tranches) { const l = lim * k; if (q > prev) ir += (Math.min(q, l) - prev) * t; prev = l; }
     ir *= parts;
     const d = parts >= 2 ? P.ir.decote.couple : P.ir.decote.seul;
-    if (ir < d[1]) ir = Math.max(0, ir - Math.max(0, d[0] - P.ir.decote.taux * ir));
+    if (ir < d[1] * k) ir = Math.max(0, ir - Math.max(0, d[0] * k - P.ir.decote.taux * ir));
     return Math.max(0, ir);
   }
 
-  function tauxCsgPourRfr(rfr, parts) {
-    const s = P.csg.seuils[parts];
+  function tauxCsgPourRfr(rfr, parts, kc = 1) {
+    const s = P.csg.seuils[parts].map((v) => v * kc);
     return rfr <= s[0] ? 0 : rfr <= s[1] ? 3.8 : rfr <= s[2] ? 6.6 : 8.3;
   }
 
   // Revenu net annuel du foyer (après prélèvements sociaux et impôt) selon un scénario.
-  // Référence : pensions revalorisées de l'inflation, abattement maintenu, CSG 8,3 %.
+  // Référence : la situation 2026 (s.ref2026), à règles fiscales constantes.
   function netFoyer(persona, s, tauxCsg) {
     const c = P.csg;
+    const k = s.ref2026 ? 1 / P.indexBareme : 1;
     const tauxCsgEff = tauxCsg === c.tauxPlein ? s.csg : tauxCsg;
     const deductible = tauxCsg === c.tauxPlein ? c.deductible[c.tauxPlein] + (s.csg - c.tauxPlein) : c.deductible[tauxCsg];
     let brutTotal = 0, netSocial = 0, imposable = 0, abattement = 0;
     for (const m of persona.membres) {
       const protege = s.seuil > 0 && m.brut < s.seuil;
       const r = protege ? P.inflation : s.revalo;
-      // m.base et m.compl sont les montants 2027 si les pensions suivent l'inflation
-      const base = m.base * 12 * (1 + r / 100) / (1 + P.inflation / 100);
-      const compl = m.compl * 12;
+      // m.base et m.compl sont les montants 2026 ; en 2027 la base suit le curseur, la complémentaire sa propre règle
+      const base = m.base * 12 * (s.ref2026 ? 1 : 1 + r / 100);
+      const compl = m.compl * 12 * (s.ref2026 ? 1 : 1 + P.revaloComplementaire / 100);
       const brut = base + compl;
       // exonéré de CSG = exonéré de CRDS et de CASA ; taux réduit 3,8 % = exonéré de CASA
       const crds = tauxCsg === 0 ? 0 : c.crds;
@@ -54,40 +56,46 @@
       brutTotal += brut; netSocial += brut - prel;
       const imp = brut * (1 - deductible / 100);
       imposable += imp;
-      abattement += Math.max(P.abatt.minimum, imp * P.abatt.taux);
+      abattement += Math.max(P.abatt.minimum * k, imp * P.abatt.taux);
     }
-    abattement = Math.min(abattement, s.abatt, imposable);  // s.abatt = plafond par foyer retenu (0 = suppression)
+    abattement = Math.min(abattement, s.abatt * k, imposable);  // s.abatt = plafond par foyer retenu (0 = suppression)
     const revenuNetGlobal = imposable - abattement;
     // Abattement « personnes âgées » (art. 157 bis CGI) : tous les personnages ont plus de 65 ans
     const a65 = P.ir.abattement65;
     const nb = persona.membres.length;
-    const abatt65 = revenuNetGlobal <= a65.seuil1 ? a65.montant1 * nb : revenuNetGlobal <= a65.seuil2 ? a65.montant2 * nb : 0;
+    const abatt65 = revenuNetGlobal <= a65.seuil1 * k ? a65.montant1 * k * nb : revenuNetGlobal <= a65.seuil2 * k ? a65.montant2 * k * nb : 0;
     const revenuNetImposable = Math.max(0, revenuNetGlobal - abatt65);
-    let ir = impot(revenuNetImposable, persona.parts);
+    let ir = impot(revenuNetImposable, persona.parts, k);
     const irAvantReduction = ir;
     if (persona.ehpad) ir = Math.max(0, ir - P.ehpad.reductionTaux * Math.min(persona.ehpad * 12, P.ehpad.reductionPlafond));
     return { net: netSocial - ir, ir, irAvantReduction, rfr: revenuNetImposable, brut: brutTotal, netSocial };
   }
 
   const BASE = { revalo: P.inflation, seuil: 0, abatt: P.abatt.plafond, csg: P.csg.tauxPlein };
+  const REF2026 = { ...BASE, ref2026: true };
 
   function tauxCsgPersona(persona) {
     // Le taux de CSG dépend du RFR (d'il y a deux ans) : on itère jusqu'à cohérence.
     let t = P.csg.tauxPlein;
-    for (let i = 0; i < 3; i++) t = tauxCsgPourRfr(netFoyer(persona, BASE, t).rfr, persona.parts);
+    for (let i = 0; i < 3; i++) t = tauxCsgPourRfr(netFoyer(persona, REF2026, t).rfr, persona.parts, 1 / P.indexSeuilsCsg);
     return t;
   }
 
   function micro(persona, s) {
     const t = tauxCsgPersona(persona);
-    const ref = netFoyer(persona, BASE, t);
-    const delta = (sc) => (netFoyer(persona, sc, t).net - ref.net) / 12;
+    const ref = netFoyer(persona, REF2026, t);
+    // Décomposition séquentielle : les trois lignes s'additionnent exactement au total.
+    const n1 = netFoyer(persona, { ...BASE, revalo: s.revalo, seuil: s.seuil }, t).net;
+    const n2 = netFoyer(persona, { ...BASE, revalo: s.revalo, seuil: s.seuil, abatt: s.abatt }, t).net;
+    const n3 = netFoyer(persona, s, t).net;
+    const total = (n3 - ref.net) / 12;
     return {
       tauxCsg: t, ref,
-      revalo: delta({ ...BASE, revalo: s.revalo, seuil: s.seuil }),
-      abatt: delta({ ...BASE, abatt: s.abatt }),
-      csg: delta({ ...BASE, csg: s.csg }),
-      total: delta(s),
+      revalo: (n1 - ref.net) / 12,
+      abatt: (n2 - n1) / 12,
+      csg: (n3 - n2) / 12,
+      total,
+      pouvoirAchat: total - (ref.net / 12) * P.inflation / 100,  // ce qu'il reste une fois les prix (+inflation) payés
     };
   }
 
@@ -213,12 +221,19 @@
       const r = micro(p, state);
       const brut = p.membres.reduce((a, m) => a + m.brut, 0);
       const netMois = r.ref.net / 12;
-      const facts = `Pension brute : ${fmt(brut, 0)} €/mois${p.membres.length > 1 ? ' à deux' : ''} · net après impôt : ${fmt(netMois, 0)} €/mois · CSG à ${pct(r.tauxCsg)} · ${r.ref.ir > 0 ? 'imposable' : r.ref.irAvantReduction > 0 ? 'impôt effacé par la réduction EHPAD' : 'non imposable'}${p.ehpad ? ` · EHPAD : ${fmt(p.ehpad, 0)} €/mois, soit ${fmt(p.ehpad - netMois, 0)} € de plus que sa pension nette` : ''}`;
-      const amt = (v) => `<span class="amt ${v < -0.5 ? 'neg' : 'zero'}">${Math.abs(v) < 0.5 ? '0 €' : eur(v)}</span>`;
-      const whyRevalo = state.revalo >= P.inflation ? '' : Math.abs(r.revalo) < 0.5 ? 'protégé par le seuil' : `${pct(P.inflation - state.revalo)} de pouvoir d'achat en moins sur la pension de base`;
+      const facts = `En 2026 : pension brute ${fmt(brut, 0)} €/mois${p.membres.length > 1 ? ' à deux' : ''}, nette après impôt ${fmt(netMois, 0)} € · CSG à ${pct(r.tauxCsg)} · ${r.ref.ir > 0 ? 'imposable' : r.ref.irAvantReduction > 0 ? 'impôt effacé par la réduction EHPAD' : 'non imposable'}${p.ehpad ? ` · EHPAD ${fmt(p.ehpad, 0)} €/mois, soit ${fmt(p.ehpad - netMois, 0)} € de plus que sa pension nette` : ''}`;
+      const amt = (v) => `<span class="amt ${v < -0.5 ? 'neg' : v > 0.5 ? 'pos' : 'zero'}">${Math.abs(v) < 0.5 ? '0 €' : eur(v)}</span>`;
+      const basePct = state.revalo >= P.inflation ? `+${pct(P.inflation)}` : state.revalo === 0 ? 'gel' : `+${pct(state.revalo)}`;
+      const protege = state.seuil > 0 && p.membres.every((m) => m.brut < state.seuil);
+      const aCompl = p.membres.some((m) => m.compl > 0);
+      const whyRevalo = `pension de base ${protege && state.revalo < P.inflation ? `+${pct(P.inflation)}, protégée par le seuil` : basePct}${aCompl ? ` · complémentaire +${pct(P.revaloComplementaire)}` : ''}`;
       const whyAbatt = state.abatt >= P.abatt.plafond ? '' : Math.abs(r.abatt) < 0.5 ? (r.ref.ir > 0 ? 'impôt inchangé' : r.ref.irAvantReduction > 0 ? 'la réduction d\'impôt EHPAD absorbe la hausse' : 'non imposable, donc aucun effet') : 'impôt sur le revenu plus élevé';
       const whyCsg = state.csg <= P.csg.tauxPlein ? '' : Math.abs(r.csg) < 0.5 ? `au taux de ${pct(r.tauxCsg)}, pas au taux plein` : 'CSG plus élevée, en partie déductible';
       const why = (t) => (t ? `<span class="why">${t}</span>` : '');
+      const pa = r.pouvoirAchat;
+      const paText = Math.abs(pa) < 0.5 ? `Avec des prix à +${pct(P.inflation)}, le pouvoir d'achat est tout juste maintenu.`
+        : pa > 0 ? `Avec des prix à +${pct(P.inflation)}, le pouvoir d'achat progresse d'environ ${fmt(pa, 0)} € par mois.`
+        : `Avec des prix à +${pct(P.inflation)}, c'est en réalité ${fmt(-pa, 0)} € de pouvoir d'achat en moins par mois.`;
       return `<div class="card persona">
         <div class="avatar">${p.emoji}</div>
         <div>
@@ -229,8 +244,9 @@
             <li><span>Revalorisation${why(whyRevalo)}</span>${amt(r.revalo)}</li>
             <li><span>Abattement de 10 %${why(whyAbatt)}</span>${amt(r.abatt)}</li>
             <li><span>CSG${why(whyCsg)}</span>${amt(r.csg)}</li>
-            <li class="total"><span>Par mois, au total</span>${amt(r.total)}</li>
+            <li class="total"><span>Pension nette 2027, par mois</span>${amt(r.total)}</li>
           </ul>
+          <p class="note">${paText}</p>
         </div>
       </div>`;
     }).join('');
@@ -267,6 +283,7 @@
       ['Objectif d\'économies 2027', `${P.objectif} Md€`, src('amiel')],
       ['Hausse spontanée des dépenses des régimes de base', `${P.hausseSpontanee} Md€ (fourchette 10,5 à 12)`, src('martinot') + ' ; ' + src('ccss')],
       ['Revalorisation légale prévue au 1er janvier 2027', `${pct(P.inflation)} (${f(P.inflationFourchette).replace('fourchette', 'fourchette').replace(/(\d),(\d)/g, '$1,$2')} %)`, src('amiel') + ' ; ' + src('ccss')],
+      ['Revalorisation Agirc-Arrco attendue en novembre 2026', `${pct(P.revaloComplementaire)} (fourchette ${fmt(P.revaloComplementaireFourchette[0])} à ${fmt(P.revaloComplementaireFourchette[1])} %)`, src('agirc')],
       ['Économie par point de revalorisation en moins', `${fmt(P.mdParPoint)} Md€ (${f(P.mdParPointFourchette)})`, src('amiel') + ' ; ' + src('rexecode') + ' ; ' + src('plfss2026')],
       ['Part de l\'économie conservée si l\'on protège les pensions sous 1 400 € / 2 000 €', `${Math.round(P.partMasseAuDessus[1400] * 100)} % / ${Math.round(P.partMasseAuDessus[2000] * 100)} % [estimation]`, src('rexecode') + ' ; ' + src('plfss2026')],
       ['Coût actuel de l\'abattement de 10 %', `${fmt(P.abatt.cout)} Md€ en 2025, ${fmt(P.abatt.beneficiaires)} millions de ménages`, src('voies')],
@@ -299,8 +316,10 @@
       </details>
       <details><summary>Comment sont calculés les effets sur les retraités</summary>
         <ul>
-          <li>Pour chaque foyer, on calcule le revenu net annuel après CSG, CRDS, CASA, cotisation maladie de 1 % sur la complémentaire et impôt sur le revenu (abattement de 10 %, abattement des plus de 65 ans, barème, quotient familial, décote, réduction d'impôt EHPAD). L'effet d'un levier est la différence avec la situation de référence : pensions revalorisées de l'inflation, abattement maintenu, CSG à 8,3 %.</li>
-          <li>Les pensions affichées sont celles de 2027 si elles suivent l'inflation. Le barème, les seuils et les plafonds sont ceux de 2026 indexés comme annoncé, puisque les textes pour 2027 ne sont pas encore déposés.</li>
+          <li>Pour chaque foyer, on calcule le revenu net annuel après CSG, CRDS, CASA, cotisation maladie de 1 % sur la complémentaire et impôt sur le revenu (abattement de 10 %, abattement des plus de 65 ans, barème, quotient familial, décote, réduction d'impôt EHPAD). Le point de départ est la pension nette de 2026. Les trois lignes se lisent dans l'ordre : d'abord la revalorisation, puis l'abattement, puis la CSG ; elles s'additionnent exactement au total.</li>
+          <li>La complémentaire (Agirc-Arrco) est supposée revalorisée de ${pct(P.revaloComplementaire)} en novembre 2026, selon la règle de l'accord de 2023 (inflation moins 0,4 point) ; elle ne dépend pas du curseur.</li>
+          <li>La petite ligne sous chaque total compare l'évolution de la pension nette à l'inflation de ${pct(P.inflation)} : c'est l'évolution du pouvoir d'achat.</li>
+          <li>La situation 2026 est calculée avec les règles 2026 ; la situation 2027 avec le barème et les plafonds indexés de 2 % comme annoncé, les textes pour 2027 n'étant pas encore déposés. Ainsi, une pension indexée sur l'inflation garde à peu près son pouvoir d'achat, comme en réalité.</li>
           <li>La revalorisation ne s'applique qu'à la pension de base de chacun. Le seuil de protection s'apprécie sur la pension brute totale de la personne.</li>
           <li>Le taux de CSG de chaque personnage découle de son revenu fiscal de référence, comme en réalité. La hausse de CSG est supposée déductible du revenu imposable, comme en 2018. Le mécanisme de lissage sur deux ans n'est pas modélisé.</li>
           <li>Supprimer l'abattement de 10 % augmente aussi le revenu fiscal de référence, dont dépendent le taux de CSG, l'exonération de taxe foncière des plus de 75 ans et diverses aides. Ces effets de seuil, décalés de deux ans, ne sont pas comptés ici : ils peuvent aggraver la perte pour certains foyers.</li>

@@ -7,6 +7,8 @@ const P = {
   hausseSpontanee: 12,       // Md€ : hausse spontanée des dépenses des régimes de base (Martinot ; fourchette 10,5 à 12)
   inflation: 2.1,            // % : revalorisation légale prévue au 1er janvier 2027 (Bercy sept. 2026 ; CCSS mai 2026 : 1,6)
   inflationFourchette: [1.6, 2.1],
+  revaloComplementaire: 1.6,  // % : revalorisation Agirc-Arrco attendue au 1er novembre 2026 (inflation − 0,4 point ; fourchette 1,2 à 2,0), hors du levier
+  revaloComplementaireFourchette: [1.2, 2.0],
 
   // Levier 1 : revalorisation des pensions de base
   mdParPoint: 2.9,           // Md€ par point de revalorisation en moins : 6 Md€ pour 2,1 % selon Bercy
@@ -42,6 +44,8 @@ const P = {
   },
 
   // Impôt sur le revenu : barème revenus 2025 (LF 2026) indexé de 2 % comme annoncé pour le PLF 2027 [estimation]
+  indexBareme: 1.02,       // les paramètres fiscaux 2027 ci-dessous sont divisés par ce coefficient pour reconstituer 2026
+  indexSeuilsCsg: 1.009,   // idem pour les seuils de CSG (revalorisés de l'inflation 2025, 0,9 %)
   ir: {
     tranches: [[11832, 0], [30091, 0.11], [86269, 0.30], [185555, 0.41], [Infinity, 0.45]],
     decote: { seul: [915, 2022], couple: [1513, 3344], taux: 0.4525 },   // revenus 2025 : 897 € / 1 483 €

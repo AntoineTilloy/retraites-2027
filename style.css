@@ -81,10 +81,11 @@ input[type=range]{width:100%;margin:8px 0 2px;accent-color:var(--accent);height:
 
 .method details{border-top:1px solid var(--line);padding:8px 0}
 .method summary{cursor:pointer;font-weight:600;padding:6px 0}
-.method table{width:100%;border-collapse:collapse;font-size:.85rem;margin:8px 0}
-.method th,.method td{text-align:left;vertical-align:top;padding:6px 6px 6px 0;border-bottom:1px solid var(--line)}
-.method td.v{white-space:nowrap;font-variant-numeric:tabular-nums}
-.method .tbl{overflow-x:auto}
+.params{list-style:none;padding:0;margin:4px 0}
+.params li{padding:8px 0;border-bottom:1px solid var(--line);font-size:.85rem}
+.params .pn{display:block;color:var(--muted)}
+.params .pv{display:block;font-weight:600;font-variant-numeric:tabular-nums}
+.params .ps{display:block;font-size:.78rem;color:var(--muted);margin-top:2px}
 .method a{color:var(--accent)}
 .method p,.method li{font-size:.9rem}
 footer{color:var(--muted);font-size:.8rem;padding:24px 16px 48px}

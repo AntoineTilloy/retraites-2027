@@ -182,7 +182,7 @@
       el.classList.toggle('active', m[k] > 0.05);
     }
     $('#who-revalo').textContent = state.revalo >= P.inflation ? 'Personne n\'est touché : les pensions suivent les prix.'
-      : `Touche ${state.seuil ? 'les retraités dont la pension dépasse ' + fmt(state.seuil, 0) + ' € par mois' : 'tous les retraités des régimes de base'}, proportionnellement à leur pension de base. Ce n'est pas une baisse en euros, mais une perte de pouvoir d'achat de ${pct(P.inflation - state.revalo)}, qui se répète ensuite chaque année.`;
+      : `Touche ${state.seuil ? 'les retraités dont la pension dépasse ' + fmt(state.seuil, 0) + ' € par mois' : 'tous les retraités des régimes de base'}, proportionnellement à leur pension de base (les complémentaires comme l'Agirc-Arrco ne dépendent pas de l'État). Ce n'est pas une baisse en euros, mais une perte de pouvoir d'achat de ${pct(P.inflation - state.revalo)}, qui se répète ensuite chaque année.`;
     $('#who-abatt').textContent = state.abatt === 'keep' ? 'Personne n\'est touché.'
       : state.abatt === 'forfait' ? `Touche les retraités imposables dont la pension dépasse ${fmt(P.abatt.forfait / P.abatt.taux, 0)} € par an, d'autant plus qu'elle est élevée. Les non-imposables ne changent rien.`
       : 'Touche uniquement les retraités imposables, d\'autant plus que leur pension et leur taux d\'imposition sont élevés. Les non-imposables ne paient rien de plus.';
@@ -288,8 +288,8 @@
       ['Population française', `${fmt(P.population / 1e6)} millions`, src('insee')],
     ];
     $('#method-content').innerHTML = `
-      <details open><summary>Les paramètres</summary><div class="tbl"><table><thead><tr><th>Paramètre</th><th>Valeur</th><th>Source</th></tr></thead><tbody>
-      ${rows.map((r) => `<tr><td>${r[0]}</td><td class="v">${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table></div></details>
+      <details><summary>Les paramètres</summary><ul class="params">
+      ${rows.map((r) => `<li><span class="pn">${r[0]}</span><span class="pv">${r[1]}</span>${r[2] ? `<span class="ps">Source : ${r[2]}</span>` : ''}</li>`).join('')}</ul></details>
       <details><summary>Comment sont calculées les économies</summary>
         <ul>
           <li><strong>Revalorisation :</strong> (inflation − revalorisation retenue) × économie par point × part de l'économie conservée avec le seuil choisi. Le coefficient est calé sur le chiffre du gouvernement (6 Md€ pour 2,1 %), qui est aussi à peu près la masse des pensions de base 2027 divisée par 100. Seuls les régimes de base sont concernés : l'Agirc-Arrco est gérée par les partenaires sociaux et suit ses propres règles.</li>

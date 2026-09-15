@@ -67,8 +67,8 @@ const P = {
       ],
     },
     {
-      id: 'rene', nom: 'René', emoji: '👴', age: '88 ans', parts: 1, ehpad: 2500,
-      story: "Ancien ouvrier puis chef d'équipe, il vit en EHPAD depuis deux ans. Sa pension ne couvre pas le tarif : son épargne et sa fille complètent chaque mois.",
+      id: 'rene', nom: 'René', emoji: '👴', age: '94 ans', parts: 1, ehpad: 2500,
+      story: "Ancien ouvrier puis chef d'équipe, il vit en EHPAD depuis trois ans. Sa pension ne couvre pas le tarif : son épargne et sa fille complètent chaque mois.",
       membres: [
         { nom: 'René', brut: 1900, base: 1300, compl: 600, note: 'régime général + Agirc-Arrco' },
       ],

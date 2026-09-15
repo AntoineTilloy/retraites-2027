@@ -104,32 +104,38 @@
     { max: Infinity, cls: 'm5', text: "Le ministre est aux anges : la hausse des dépenses est entièrement absorbée." },
   ];
   const mood = (total) => MOODS.find((m) => total < m.max);
+  const GAUGE_MAX = 15; // borne haute de la jauge : un peu au-dessus du maximum atteignable
 
   const MOUTHS = {
-    m0: 'M38 66 Q50 54 62 66', m1: 'M40 64 Q50 58 60 64', m2: 'M40 63 L60 63',
-    m3: 'M40 61 Q50 69 60 61', m4: 'M37 60 Q50 74 63 60', m5: 'M36 59 Q50 78 64 59 Z',
+    m0: 'M40 65 Q50 56 60 65', m1: 'M41 63 Q50 59 59 63', m2: 'M41 62 L59 62',
+    m3: 'M41 60 Q50 67 59 60', m4: 'M39 59 Q50 71 61 59', m5: 'M38 58 Q50 74 62 58 Z',
   };
   const BROWS = { m0: [[34, 38, 44, 34], [56, 34, 66, 38]], m1: [[34, 37, 44, 35], [56, 35, 66, 37]], m2: [[34, 36, 44, 36], [56, 36, 66, 36]],
     m3: [[34, 35, 44, 34], [56, 34, 66, 35]], m4: [[34, 33, 44, 33], [56, 33, 66, 33]], m5: [[34, 32, 44, 31], [56, 31, 66, 32]] };
 
   function ministerSvg(cls) {
     const [b1, b2] = BROWS[cls];
-    const extra = cls === 'm0' ? '<path d="M32 50 q-4 7 0 8 q4 -1 0 -8" fill="#7cb3ff"/><path d="M68 50 q4 7 0 8 q-4 -1 0 -8" fill="#7cb3ff"/>'
-      : cls === 'm1' ? '<path d="M72 30 q-4 6 0 8 q4 -2 0 -8" fill="#7cb3ff"/>'
-      : cls === 'm4' ? '<circle cx="34" cy="56" r="4" fill="#f4a3a3" opacity=".7"/><circle cx="66" cy="56" r="4" fill="#f4a3a3" opacity=".7"/>'
-      : cls === 'm5' ? '<circle cx="34" cy="56" r="4" fill="#f4a3a3" opacity=".7"/><circle cx="66" cy="56" r="4" fill="#f4a3a3" opacity=".7"/><path d="M14 22 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z M84 14 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z" fill="#f5c542"/>'
-      : '';
+    const hair = '#c4652a', beard = '#b85a22', skin = '#f3d1b3', frame = '#6b4423';
+    const extra = cls === 'm0' ? '<path d="M33 52 q-4 7 0 8 q4 -1 0 -8" fill="#7cb3ff"/><path d="M67 52 q4 7 0 8 q-4 -1 0 -8" fill="#7cb3ff"/>'
+      : cls === 'm1' ? '<path d="M74 30 q-4 6 0 8 q4 -2 0 -8" fill="#7cb3ff"/>'
+      : cls === 'm4' || cls === 'm5' ? '<circle cx="33" cy="54" r="3.5" fill="#f4a3a3" opacity=".6"/><circle cx="67" cy="54" r="3.5" fill="#f4a3a3" opacity=".6"/>' : '';
+    const stars = cls === 'm5' ? '<path d="M14 22 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z M84 14 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z" fill="#f5c542"/>' : '';
     return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <path d="M12 100 V86 q0 -14 14 -18 l10 -3 h28 l10 3 q14 4 14 18 V100 Z" fill="#26375c"/>
       <path d="M42 66 h16 l-8 20 z" fill="#fff"/>
-      <path d="M48 70 h4 l2 8 -4 14 -4 -14 z" fill="#b83a3a"/>
-      <circle cx="50" cy="44" r="23" fill="#f2c9a6"/>
-      <path d="M27 40 q0 -22 23 -22 q23 0 23 22 q-6 -10 -23 -9 q-17 -1 -23 9z" fill="#4a3526"/>
-      <circle cx="41" cy="46" r="2.4" fill="#222"/><circle cx="59" cy="46" r="2.4" fill="#222"/>
-      <line x1="${b1[0]}" y1="${b1[1]}" x2="${b1[2]}" y2="${b1[3]}" stroke="#4a3526" stroke-width="2.4" stroke-linecap="round"/>
-      <line x1="${b2[0]}" y1="${b2[1]}" x2="${b2[2]}" y2="${b2[3]}" stroke="#4a3526" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M48 70 h4 l2 8 -4 14 -4 -14 z" fill="#8a2f3a"/>
+      <circle cx="50" cy="44" r="23" fill="${skin}"/>
+      <path d="M29 58 q2 14 21 15 q19 -1 21 -15 q-8 6 -21 6 q-13 0 -21 -6z" fill="${beard}"/>
+      <path d="M27 42 q0 -24 23 -24 q23 0 23 24 q-4 -12 -23 -11 q-19 -1 -23 11z" fill="${hair}"/>
+      <path d="M27 42 q-2 8 2 12 q-1 -8 2 -12z M73 42 q2 8 -2 12 q1 -8 -2 -12z" fill="${hair}"/>
+      <line x1="${b1[0]}" y1="${b1[1]}" x2="${b1[2]}" y2="${b1[3]}" stroke="${hair}" stroke-width="2.6" stroke-linecap="round"/>
+      <line x1="${b2[0]}" y1="${b2[1]}" x2="${b2[2]}" y2="${b2[3]}" stroke="${hair}" stroke-width="2.6" stroke-linecap="round"/>
+      <circle cx="41" cy="46" r="2.2" fill="#222"/><circle cx="59" cy="46" r="2.2" fill="#222"/>
+      <circle cx="41" cy="46" r="7" fill="none" stroke="${frame}" stroke-width="2"/>
+      <circle cx="59" cy="46" r="7" fill="none" stroke="${frame}" stroke-width="2"/>
+      <path d="M48 46 h4" stroke="${frame}" stroke-width="2"/><path d="M34 45 h-6 M66 45 h6" stroke="${frame}" stroke-width="1.8"/>
       <path d="${MOUTHS[cls]}" fill="${cls === 'm5' ? '#7a2a2a' : 'none'}" stroke="#7a2a2a" stroke-width="2.4" stroke-linecap="round"/>
-      ${extra}
+      ${extra}${stars}
     </svg>`;
   }
 
@@ -138,7 +144,7 @@
     const m = macro(state);
     $('#total').textContent = fmt(m.total);
     const fill = $('#gauge-fill');
-    fill.style.width = Math.min(100, (m.total / 12) * 100) + '%';
+    fill.style.width = Math.min(100, (m.total / GAUGE_MAX) * 100) + '%';
     fill.className = 'gauge-fill' + (m.total >= 12 ? ' over' : m.total >= P.objectif ? ' ok' : '');
     $('#gauge').setAttribute('aria-valuenow', m.total.toFixed(1));
     const md = mood(m.total);
@@ -296,6 +302,8 @@
     $('#p-plafond').textContent = fmt(P.abatt.plafond, 0);
     $('#p-forfait').textContent = fmt(P.abatt.forfait, 0);
     $('#revalo').max = P.inflation;
+    $('#gauge').setAttribute('aria-valuemax', GAUGE_MAX);
+    $('#gauge .gauge-target').style.left = (P.objectif / GAUGE_MAX * 100) + '%';
     $('#repo-link').href = P.repo;
     readHash(); syncControls(); renderMethod(); render();
 

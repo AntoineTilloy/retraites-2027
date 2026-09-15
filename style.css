@@ -64,6 +64,7 @@ input[type=range]{width:100%;margin:8px 0 2px;accent-color:var(--accent);height:
 
 .persona{display:grid;grid-template-columns:52px 1fr;gap:12px}
 .persona .avatar{width:52px;height:52px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:1.6rem}
+.persona h3 .net{display:block;font-weight:500;color:var(--muted);font-size:.9rem}
 .persona .story{font-size:.9rem;color:var(--muted);margin:.2em 0 .5em}
 .persona .facts{font-size:.8rem;color:var(--muted);margin:0 0 .6em}
 .impacts{list-style:none;padding:0;margin:0;font-size:.92rem}

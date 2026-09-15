@@ -221,7 +221,7 @@
       const r = micro(p, state);
       const brut = p.membres.reduce((a, m) => a + m.brut, 0);
       const netMois = r.ref.net / 12;
-      const facts = `En 2026 : pension brute ${fmt(brut, 0)} €/mois${p.membres.length > 1 ? ' à deux' : ''}, nette après impôt ${fmt(netMois, 0)} € · CSG à ${pct(r.tauxCsg)} · ${r.ref.ir > 0 ? 'imposable' : r.ref.irAvantReduction > 0 ? 'impôt effacé par la réduction EHPAD' : 'non imposable'}${p.ehpad ? ` · EHPAD ${fmt(p.ehpad, 0)} €/mois, soit ${fmt(p.ehpad - netMois, 0)} € de plus que sa pension nette` : ''}`;
+      const facts = `${p.age} · pension brute ${fmt(brut, 0)} €/mois${p.membres.length > 1 ? ' à deux' : ''} en 2026 · CSG à ${pct(r.tauxCsg)} · ${r.ref.ir > 0 ? 'imposable' : r.ref.irAvantReduction > 0 ? 'impôt effacé par la réduction EHPAD' : 'non imposable'}${p.ehpad ? ` · EHPAD ${fmt(p.ehpad, 0)} €/mois, soit ${fmt(p.ehpad - netMois, 0)} € de plus que sa pension nette` : ''}`;
       const amt = (v) => `<span class="amt ${v < -0.5 ? 'neg' : v > 0.5 ? 'pos' : 'zero'}">${Math.abs(v) < 0.5 ? '0 €' : eur(v)}</span>`;
       const basePct = state.revalo >= P.inflation ? `+${pct(P.inflation)}` : state.revalo === 0 ? 'gel' : `+${pct(state.revalo)}`;
       const protege = state.seuil > 0 && p.membres.every((m) => m.brut < state.seuil);
@@ -237,7 +237,7 @@
       return `<div class="card persona">
         <div class="avatar">${p.emoji}</div>
         <div>
-          <h3>${p.nom}, ${p.age}</h3>
+          <h3>${p.nom}<span class="net">${fmt(netMois, 0)} € nets par mois${p.membres.length > 1 ? ' à deux' : ''}</span></h3>
           <p class="story">${p.story}</p>
           <p class="facts">${facts}</p>
           <ul class="impacts">

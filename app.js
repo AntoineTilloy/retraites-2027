@@ -231,7 +231,7 @@
       const whyCsg = state.csg <= P.csg.tauxPlein ? '' : Math.abs(r.csg) < 0.5 ? `au taux de ${pct(r.tauxCsg)}, pas au taux plein` : 'CSG plus élevée, en partie déductible';
       const why = (t) => (t ? `<span class="why">${t}</span>` : '');
       const pa = r.pouvoirAchat;
-      const paText = Math.abs(pa) < 2 ? `Avec des prix à +${pct(P.inflation)}, le pouvoir d'achat est tout juste maintenu.`
+      const paText = Math.abs(pa) < 2 ? `Avec des prix à +${pct(P.inflation)}, le pouvoir d'achat est maintenu.`
         : pa > 0 ? `Avec des prix à +${pct(P.inflation)}, le pouvoir d'achat progresse d'environ ${fmt(pa, 0)} € par mois.`
         : `Avec des prix à +${pct(P.inflation)}, c'est en réalité ${fmt(-pa, 0)} € de pouvoir d'achat en moins par mois.`;
       return `<div class="card persona">

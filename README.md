@@ -1,4 +1,4 @@
-# Retraites 2027 : où trouveriez-vous les 6 milliards ?
+# Retraites 2027 : où trouver 6 milliards ?
 
 Un simulateur citoyen, simple et sourcé, sur le débat budgétaire de l'automne 2026 : trois leviers
 (revalorisation des pensions de base, abattement fiscal de 10 %, CSG des retraités), un objectif

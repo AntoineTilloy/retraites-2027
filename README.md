@@ -2,7 +2,7 @@
 
 Un simulateur citoyen, simple et sourcé, sur le débat budgétaire de l'automne 2026 : trois leviers
 (revalorisation des pensions de base, abattement fiscal de 10 %, CSG des retraités), un objectif
-de 6 milliards d'euros d'économies, et l'effet concret sur quatre retraités types.
+de 6 milliards d'euros d'économies, et l'effet concret sur trois cas types.
 
 Tout tourne dans le navigateur, sans serveur, sans publicité, sans collecte de données.
 

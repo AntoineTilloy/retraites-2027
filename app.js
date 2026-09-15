@@ -124,11 +124,16 @@
       : cls === 'm4' || cls === 'm5' ? '<ellipse cx="36" cy="53" rx="3.5" ry="2.2" fill="#f2a1a1" opacity=".55"/><ellipse cx="64" cy="53" rx="3.5" ry="2.2" fill="#f2a1a1" opacity=".55"/>' : '';
     const stars = cls === 'm5' ? '<path d="M13 20 l1.8 4.5 4.5 1.8 -4.5 1.8 -1.8 4.5 -1.8 -4.5 -4.5 -1.8 4.5 -1.8z M86 12 l1.8 4.5 4.5 1.8 -4.5 1.8 -1.8 4.5 -1.8 -4.5 -4.5 -1.8 4.5 -1.8z" fill="#f5c542"/>' : '';
     return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <!-- épaules, veste bleu marine, chemise, cravate -->
-      <path d="M8 100 V88 q0 -14 15 -19 l14 -5 h26 l14 5 q15 5 15 19 V100 Z" fill="#22304f"/>
-      <path d="M37 64 l13 24 l13 -24 l-4 -1 l-9 18 l-9 -18 z" fill="#f7f7f7"/>
-      <path d="M47.5 66 h5 l1.5 6 -4 12 -4 -12 z" fill="#7c2d3c"/>
-      <path d="M8 100 V88 q0 -14 15 -19 l14 -5 l6 4 l-8 32z M92 100 V88 q0 -14 -15 -19 l-14 -5 l-6 4 l8 32z" fill="#1b2741"/>
+      <!-- costume : veste, chemise en V, revers, cravate -->
+      <path d="M6 100 V88 q0 -13 14 -18 l16 -6 h28 l16 6 q14 5 14 18 V100 Z" fill="#22304f"/>
+      <path d="M37 64 L50 90 L63 64 Z" fill="#f8f8f8"/>
+      <path d="M37 64 L50 88 L46 100 L27 100 L33 78 Z" fill="#2b3c62"/>
+      <path d="M63 64 L50 88 L54 100 L73 100 L67 78 Z" fill="#2b3c62"/>
+      <path d="M37 64 L50 88 L46 100 M63 64 L50 88 L54 100" fill="none" stroke="#1b2741" stroke-width=".8"/>
+      <path d="M43.5 62 L50 71 L47.5 63 Z M56.5 62 L50 71 L52.5 63 Z" fill="#fff"/>
+      <path d="M47 66.5 h6 l1 4.5 h-8 z" fill="#8a2f3f"/>
+      <path d="M46.6 71 h6.8 l2 15 -5.4 5 -5.4 -5 z" fill="#8a2f3f"/>
+      <path d="M48 72 l3.6 16" stroke="#a54455" stroke-width=".9" opacity=".7"/>
       <!-- cou, oreilles, visage -->
       <rect x="43" y="58" width="14" height="12" fill="#e8bf9d"/>
       <ellipse cx="29.5" cy="45" rx="3.2" ry="4.5" fill="#edc49f"/><ellipse cx="70.5" cy="45" rx="3.2" ry="4.5" fill="#edc49f"/>

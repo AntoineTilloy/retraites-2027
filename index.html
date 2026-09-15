@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Retraites 2027 : où trouver les 6 milliards ?</title>
+<meta name="description" content="Un simulateur simple et sourcé : bougez trois curseurs (revalorisation, abattement de 10 %, CSG) et voyez ce que ça change pour le budget et pour quatre retraités types.">
+<meta property="og:title" content="Retraites 2027 : où trouver les 6 milliards ?">
+<meta property="og:description" content="Trois curseurs, quatre retraités types, un objectif de 6 milliards d'euros. À vous d'arbitrer.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%96%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <p class="kicker">Budget 2027 · simulateur citoyen</p>
+  <h1>Retraites 2027 : où trouveriez-vous les 6 milliards ?</h1>
+  <p class="lead">Les dépenses de retraite augmentent d'elles-mêmes d'environ 12 milliards d'euros en 2027 : plus de retraités, et des pensions qui suivent les prix. Le gouvernement veut en économiser 6. Trois leviers sont sur la table. Bougez-les, et regardez ce que ça change pour le budget et pour quatre retraités.</p>
+</header>
+
+<div class="sticky" id="sticky">
+  <div class="sticky-inner">
+    <div class="minister" id="minister" aria-hidden="true"></div>
+    <div class="gauge-wrap">
+      <div class="gauge-labels">
+        <span class="gauge-title">Économies 2027</span>
+        <span class="gauge-value"><strong id="total">0,0</strong> Md€ <span class="muted">/ objectif 6</span></span>
+      </div>
+      <div class="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0" id="gauge">
+        <div class="gauge-fill" id="gauge-fill"></div>
+        <div class="gauge-target" style="left:50%"><span>6</span></div>
+      </div>
+      <p class="mood-text" id="mood-text"></p>
+    </div>
+  </div>
+</div>
+
+<main>
+  <section class="levers" id="levers">
+    <h2>Vos trois leviers</h2>
+
+    <div class="card lever" id="lever-revalo">
+      <div class="lever-head">
+        <h3>1. Revalorisation des pensions de base au 1<sup>er</sup> janvier 2027</h3>
+        <span class="lever-gain" id="gain-revalo">0,0 Md€</span>
+      </div>
+      <p class="lever-desc">La loi prévoit d'augmenter les pensions comme les prix, soit environ <span id="p-inflation"></span> % en janvier 2027. Chaque dixième de point en moins est une économie pour l'État, et une perte de pouvoir d'achat pour les retraités. Les retraites complémentaires (Agirc-Arrco) ne sont pas concernées : elles ne dépendent pas de l'État.</p>
+      <label class="slider-label" for="revalo"><span>Revalorisation retenue</span><output id="revalo-out"></output></label>
+      <input type="range" id="revalo" min="0" max="2.1" step="0.1" value="2.1">
+      <div class="slider-ends"><span>Gel (0 %)</span><span>Comme l'inflation</span></div>
+      <div class="sub">
+        <span class="sub-label">Protéger les pensions inférieures à</span>
+        <div class="seg" role="group" aria-label="Seuil de protection" id="seuil">
+          <button data-v="0" class="on">Aucun seuil</button>
+          <button data-v="1400">1 400 €</button>
+          <button data-v="2000">2 000 €</button>
+        </div>
+      </div>
+      <p class="who" id="who-revalo"></p>
+    </div>
+
+    <div class="card lever" id="lever-abatt">
+      <div class="lever-head">
+        <h3>2. Abattement de 10 % sur les pensions à l'impôt sur le revenu</h3>
+        <span class="lever-gain" id="gain-abatt">0,0 Md€</span>
+      </div>
+      <p class="lever-desc">Depuis 1978, 10 % de la pension est déduit avant le calcul de l'impôt, comme les frais professionnels des salariés. Il est plafonné à <span id="p-plafond"></span> € par foyer et coûte environ 5 milliards par an. Seuls les retraités imposables, environ la moitié, en profitent.</p>
+      <div class="seg seg-wide" role="group" aria-label="Abattement" id="abatt">
+        <button data-v="keep" class="on">Le maintenir</button>
+        <button data-v="forfait">Forfait de <span id="p-forfait"></span> €</button>
+        <button data-v="remove">Le supprimer</button>
+      </div>
+      <p class="who" id="who-abatt"></p>
+    </div>
+
+    <div class="card lever" id="lever-csg">
+      <div class="lever-head">
+        <h3>3. CSG sur les pensions</h3>
+        <span class="lever-gain" id="gain-csg">0,0 Md€</span>
+      </div>
+      <p class="lever-desc">Les retraités aux revenus les plus élevés paient 8,3 % de CSG, contre 9,2 % pour les salariés. Les autres paient 6,6 %, 3,8 % ou rien, selon leurs revenus. Ce levier ne touche que le taux plein.</p>
+      <label class="slider-label" for="csg"><span>Taux plein de CSG</span><output id="csg-out"></output></label>
+      <input type="range" id="csg" min="8.3" max="9.2" step="0.1" value="8.3">
+      <div class="slider-ends"><span>8,3 % (actuel)</span><span>9,2 % (comme les salariés)</span></div>
+      <p class="who" id="who-csg"></p>
+    </div>
+
+    <div class="card reste" id="reste"></div>
+  </section>
+
+  <section class="personas" id="personas">
+    <h2>Ce que ça change pour eux</h2>
+    <p class="section-lead">Quatre situations fictives mais réalistes. Les montants sont en euros par mois, une fois les prélèvements pris en compte.</p>
+    <div id="persona-cards"></div>
+  </section>
+
+  <section class="share card">
+    <h2>Partager votre scénario</h2>
+    <p>Le lien ci-dessous contient vos réglages.</p>
+    <div class="share-row">
+      <input type="text" id="share-url" readonly>
+      <button id="copy">Copier</button>
+    </div>
+  </section>
+
+  <section class="method" id="method">
+    <h2>Méthode, hypothèses et sources</h2>
+    <p class="section-lead">Tout est calculé dans votre navigateur avec les paramètres ci-dessous. Ce sont des ordres de grandeur : les sources elles-mêmes divergent, et les fourchettes sont indiquées. Le code est public.</p>
+    <div id="method-content"></div>
+  </section>
+</main>
+
+<footer>
+  <p>Simulateur indépendant, sans publicité ni collecte de données. Aucun lien avec le gouvernement ni un parti. Code source et signalement d'erreurs : <a id="repo-link" href="#">GitHub</a>.</p>
+</footer>
+
+<script src="params.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

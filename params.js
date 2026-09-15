@@ -15,14 +15,17 @@ const P = {
   // gel > 2 000 € = 2,9 Md€ (Rexecode) sur un gel total de 6 à 7 Md€ ; gel > 1 400 € ≈ 4 Md€ [estimation Sénat/PLFSS 2026]
   partMasseAuDessus: { 0: 1, 1400: 0.67, 2000: 0.45 },
 
-  // Levier 2 : abattement de 10 % sur les pensions (art. 158-5-a CGI)
+  // Levier 2 : abattement de 10 % sur les pensions (art. 158-5-a CGI). Le curseur abaisse le plafond par foyer, jusqu'à 0 (suppression).
   abatt: {
     taux: 0.10,
     plafond: 4528, minimum: 463,        // revenus 2026 [estimation : 4 439 € / 454 € pour les revenus 2025, indexés de 2 %]
-    forfait: 2000, forfaitParPersonne: true,  // art. 6 du PLF 2026 : 2 000 € par pensionné, déductible, plafonné à la pension
+    plafonds: [0, 1000, 2000, 3000, 4528],
+    // Md€ économisés selon le plafond retenu. 0 = suppression totale (Cour des comptes / OFCE 4,5 ; Bercy 5,7 ; retenu 5,5).
+    // Plafonds intermédiaires : [estimation] microsimulation simplifiée (distribution des pensions calée sur la DREES,
+    // barème 2027, abattement des plus de 65 ans, décote), normalisée pour que la suppression totale rapporte 5,5 Md€.
+    gains: { 0: 5.5, 1000: 3.9, 2000: 2.4, 3000: 1.1, 4528: 0 },
+    gainSuppressionFourchette: [4.5, 5.7],
     cout: 5.3,                          // Md€ : dépense fiscale n° 120401, prévision 2025 (Voies et moyens, PLF 2026)
-    gainSuppression: 5.5, gainSuppressionFourchette: [4.5, 5.7],  // Cour des comptes / OFCE 4,5 ; Bercy 5,7 (AFP 14/09/2026)
-    gainForfait: 1.5, gainForfaitFourchette: [1.2, 1.5],          // PLF 2026 : 1,2 Md€ en 2026, 1,5 Md€ en 2027
     beneficiaires: 15.1,                // millions de ménages (Voies et moyens)
   },
 
@@ -85,7 +88,8 @@ const P = {
     { id: 'ipp', titre: "Institut des politiques publiques, juin 2026 : sous-indexer les retraites, effets et effet retour d'environ 20 %", url: 'https://www.ipp.eu/wp-content/uploads/2026/06/Chapitre_Desindexation_retraite___Rapport_Perspectives_Budgetaires_2027-3.pdf' },
     { id: 'voies', titre: "PLF 2026, Voies et moyens tome II : dépense fiscale n° 120401 (abattement de 10 %), 4,8 Md€ en 2024, 5,3 Md€ en 2025, 15,1 millions de ménages", url: 'https://www.budget.gouv.fr/documentation/file-download/30586' },
     { id: 'ofce', titre: "OFCE, Pierre Madec, janvier 2025 : coût de l'abattement de 10 %, 4,5 Md€", url: 'https://www.ofce.fr/blog2024/fr/2025/20250109_PM/' },
-    { id: 'plf2026', titre: "PLF 2026, article 6 : abattement forfaitaire de 2 000 € par pensionné (rejeté le 13 novembre 2025)", url: 'https://www.assemblee-nationale.fr/dyn/opendata/PRJLANR5L17B1906.html' },
+    { id: 'plf2026', titre: "PLF 2026, article 6 : abattement forfaitaire de 2 000 € par pensionné (rejeté le 13 novembre 2025) ; le Sénat proposait plutôt d'abaisser le plafond", url: 'https://www.assemblee-nationale.fr/dyn/opendata/PRJLANR5L17B1906.html' },
+    { id: 'drees2025', titre: "DREES, Les retraités et les retraites, édition 2025 : distribution des pensions", url: 'https://www.drees.solidarites-sante.gouv.fr/sites/default/files/2025-07/Les%20retrait%C3%A9s%20et%20les%20retraites%20-%20%C3%89dition%202025.pdf' },
     { id: 'senat2017', titre: "Sénat, novembre 2017 : la hausse de 1,7 point de CSG rapporte 4,5 Md€ sur les retraités", url: 'https://www.senat.fr/presse/cp20171108a.html' },
     { id: 'dss', titre: "Instruction DSS du 11 décembre 2025 : seuils de CSG 2026 sur les pensions", url: 'https://legislation.lassuranceretraite.fr/Pdf/instruction_ministerielle_11122025.pdf' },
     { id: 'cfdt', titre: "CFDT Retraités : taux de CSG, répartition des retraités par taux (2024)", url: 'https://www.xn--cfdt-retraits-mhb.fr/CSG2026' },

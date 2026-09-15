@@ -6,12 +6,12 @@
   const eur = (n, d = 0) => (n < 0 ? '−' : n > 0 ? '+' : '') + fmt(Math.abs(n), d) + ' €';
   const pct = (n) => fmt(n, 1).replace(/,0$/, '') + ' %';
 
-  const state = { revalo: P.inflation, seuil: 0, abatt: 'keep', csg: P.csg.tauxPlein };
+  const state = { revalo: P.inflation, seuil: 0, abatt: P.abatt.plafond, csg: P.csg.tauxPlein };
 
   /* ---------- Macro : économies pour l'État ---------- */
   function macro(s) {
     const revalo = (P.inflation - s.revalo) * P.mdParPoint * P.partMasseAuDessus[s.seuil];
-    const abatt = s.abatt === 'remove' ? P.abatt.gainSuppression : s.abatt === 'forfait' ? P.abatt.gainForfait : 0;
+    const abatt = P.abatt.gains[s.abatt] ?? 0;
     const csg = (s.csg - P.csg.tauxPlein) * P.csg.mdParPoint;
     return { revalo, abatt, csg, total: revalo + abatt + csg };
   }
@@ -54,12 +54,9 @@
       brutTotal += brut; netSocial += brut - prel;
       const imp = brut * (1 - deductible / 100);
       imposable += imp;
-      if (s.abatt === 'keep') abattement += Math.max(P.abatt.minimum, imp * P.abatt.taux);
-      else if (s.abatt === 'forfait') abattement += P.abatt.forfaitParPersonne ? P.abatt.forfait : 0;
+      abattement += Math.max(P.abatt.minimum, imp * P.abatt.taux);
     }
-    if (s.abatt === 'keep') abattement = Math.min(abattement, P.abatt.plafond);
-    if (s.abatt === 'forfait' && !P.abatt.forfaitParPersonne) abattement = P.abatt.forfait;
-    abattement = Math.min(abattement, imposable);
+    abattement = Math.min(abattement, s.abatt, imposable);  // s.abatt = plafond par foyer retenu (0 = suppression)
     const revenuNetGlobal = imposable - abattement;
     // Abattement « personnes âgées » (art. 157 bis CGI) : tous les personnages ont plus de 65 ans
     const a65 = P.ir.abattement65;
@@ -72,7 +69,7 @@
     return { net: netSocial - ir, ir, irAvantReduction, rfr: revenuNetImposable, brut: brutTotal, netSocial };
   }
 
-  const BASE = { revalo: P.inflation, seuil: 0, abatt: 'keep', csg: P.csg.tauxPlein };
+  const BASE = { revalo: P.inflation, seuil: 0, abatt: P.abatt.plafond, csg: P.csg.tauxPlein };
 
   function tauxCsgPersona(persona) {
     // Le taux de CSG dépend du RFR (d'il y a deux ans) : on itère jusqu'à cohérence.
@@ -183,9 +180,10 @@
     }
     $('#who-revalo').textContent = state.revalo >= P.inflation ? 'Personne n\'est touché : les pensions suivent les prix.'
       : `Touche ${state.seuil ? 'les retraités dont la pension dépasse ' + fmt(state.seuil, 0) + ' € par mois' : 'tous les retraités des régimes de base'}, proportionnellement à leur pension de base (les complémentaires comme l'Agirc-Arrco ne dépendent pas de l'État). Ce n'est pas une baisse en euros, mais une perte de pouvoir d'achat de ${pct(P.inflation - state.revalo)}, qui se répète ensuite chaque année.`;
-    $('#who-abatt').textContent = state.abatt === 'keep' ? 'Personne n\'est touché.'
-      : state.abatt === 'forfait' ? `Touche les retraités imposables dont la pension dépasse ${fmt(P.abatt.forfait / P.abatt.taux, 0)} € par an, d'autant plus qu'elle est élevée. Les non-imposables ne changent rien.`
-      : 'Touche uniquement les retraités imposables, d\'autant plus que leur pension et leur taux d\'imposition sont élevés. Les non-imposables ne paient rien de plus.';
+    $('#abatt-out').textContent = state.abatt === 0 ? 'Supprimé' : state.abatt >= P.abatt.plafond ? `${fmt(P.abatt.plafond, 0)} € (actuel)` : `Plafond ${fmt(state.abatt, 0)} €`;
+    $('#who-abatt').textContent = state.abatt >= P.abatt.plafond ? 'Personne n\'est touché.'
+      : state.abatt === 0 ? 'Touche uniquement les retraités imposables, d\'autant plus que leur pension et leur taux d\'imposition sont élevés. Les non-imposables ne paient rien de plus.'
+      : `Touche les retraités imposables dont le foyer perçoit plus de ${fmt(state.abatt / P.abatt.taux / 12, 0)} € de pension par mois, d'autant plus qu'ils sont au-dessus. Les autres ne changent rien.`;
     $('#who-csg').textContent = state.csg <= P.csg.tauxPlein ? 'Personne n\'est touché.'
       : `Touche seulement les retraités au taux plein de CSG, soit ${P.csg.repartition[8.3]} % d'entre eux, ceux dont les revenus sont les plus élevés. La hausse est supposée déductible de l'impôt sur le revenu, comme en 2018, ce qui en atténue un peu le coût pour les imposables.`;
 
@@ -218,7 +216,7 @@
       const facts = `Pension brute : ${fmt(brut, 0)} €/mois${p.membres.length > 1 ? ' à deux' : ''} · net après impôt : ${fmt(netMois, 0)} €/mois · CSG à ${pct(r.tauxCsg)} · ${r.ref.ir > 0 ? 'imposable' : r.ref.irAvantReduction > 0 ? 'impôt effacé par la réduction EHPAD' : 'non imposable'}${p.ehpad ? ` · EHPAD : ${fmt(p.ehpad, 0)} €/mois, soit ${fmt(p.ehpad - netMois, 0)} € de plus que sa pension nette` : ''}`;
       const amt = (v) => `<span class="amt ${v < -0.5 ? 'neg' : 'zero'}">${Math.abs(v) < 0.5 ? '0 €' : eur(v)}</span>`;
       const whyRevalo = state.revalo >= P.inflation ? '' : Math.abs(r.revalo) < 0.5 ? 'protégé par le seuil' : `${pct(P.inflation - state.revalo)} de pouvoir d'achat en moins sur la pension de base`;
-      const whyAbatt = state.abatt === 'keep' ? '' : Math.abs(r.abatt) < 0.5 ? (r.ref.ir > 0 ? 'impôt inchangé' : r.ref.irAvantReduction > 0 ? 'la réduction d\'impôt EHPAD absorbe la hausse' : 'non imposable, donc aucun effet') : 'impôt sur le revenu plus élevé';
+      const whyAbatt = state.abatt >= P.abatt.plafond ? '' : Math.abs(r.abatt) < 0.5 ? (r.ref.ir > 0 ? 'impôt inchangé' : r.ref.irAvantReduction > 0 ? 'la réduction d\'impôt EHPAD absorbe la hausse' : 'non imposable, donc aucun effet') : 'impôt sur le revenu plus élevé';
       const whyCsg = state.csg <= P.csg.tauxPlein ? '' : Math.abs(r.csg) < 0.5 ? `au taux de ${pct(r.tauxCsg)}, pas au taux plein` : 'CSG plus élevée, en partie déductible';
       const why = (t) => (t ? `<span class="why">${t}</span>` : '');
       return `<div class="card persona">
@@ -249,7 +247,8 @@
     const q = new URLSearchParams(location.hash.slice(1));
     const r = parseFloat(q.get('r')); if (!isNaN(r)) state.revalo = Math.min(P.inflation, Math.max(0, r));
     const s = parseInt(q.get('s'), 10); if ([0, 1400, 2000].includes(s)) state.seuil = s;
-    const a = q.get('a'); if (['keep', 'forfait', 'remove'].includes(a)) state.abatt = a;
+    const a = q.get('a'); const legacy = { keep: P.abatt.plafond, remove: 0, forfait: 2000 };
+    if (a in legacy) state.abatt = legacy[a]; else if (P.abatt.plafonds.includes(parseInt(a, 10))) state.abatt = parseInt(a, 10);
     const c = parseFloat(q.get('c')); if (!isNaN(c)) state.csg = Math.min(P.csg.tauxSalaries, Math.max(P.csg.tauxPlein, c));
   }
 
@@ -257,7 +256,7 @@
     $('#revalo').value = state.revalo;
     $('#csg').value = state.csg;
     for (const b of document.querySelectorAll('#seuil button')) b.classList.toggle('on', +b.dataset.v === state.seuil);
-    for (const b of document.querySelectorAll('#abatt button')) b.classList.toggle('on', b.dataset.v === state.abatt);
+    $('#abatt').value = P.abatt.plafonds.indexOf(state.abatt);
   }
 
   /* ---------- Méthode ---------- */
@@ -271,8 +270,8 @@
       ['Économie par point de revalorisation en moins', `${fmt(P.mdParPoint)} Md€ (${f(P.mdParPointFourchette)})`, src('amiel') + ' ; ' + src('rexecode') + ' ; ' + src('plfss2026')],
       ['Part de l\'économie conservée si l\'on protège les pensions sous 1 400 € / 2 000 €', `${Math.round(P.partMasseAuDessus[1400] * 100)} % / ${Math.round(P.partMasseAuDessus[2000] * 100)} % [estimation]`, src('rexecode') + ' ; ' + src('plfss2026')],
       ['Coût actuel de l\'abattement de 10 %', `${fmt(P.abatt.cout)} Md€ en 2025, ${fmt(P.abatt.beneficiaires)} millions de ménages`, src('voies')],
-      ['Suppression de l\'abattement de 10 %', `${fmt(P.abatt.gainSuppression)} Md€ (${f(P.abatt.gainSuppressionFourchette)})`, src('ofce') + ' ; ' + src('afp')],
-      ['Remplacement par un forfait de ' + fmt(P.abatt.forfait, 0) + ' € par pensionné', `${fmt(P.abatt.gainForfait)} Md€ (${f(P.abatt.gainForfaitFourchette)})`, src('plf2026')],
+      ['Suppression de l\'abattement de 10 %', `${fmt(P.abatt.gains[0])} Md€ (${f(P.abatt.gainSuppressionFourchette)})`, src('ofce') + ' ; ' + src('afp')],
+      ['Abaissement du plafond à 3 000 / 2 000 / 1 000 € par foyer', `${[3000, 2000, 1000].map((v) => fmt(P.abatt.gains[v])).join(' / ')} Md€ [estimation]`, src('drees2025') + ' ; ' + src('plf2026')],
       ['Rendement d\'un point de CSG au taux plein', `${fmt(P.csg.mdParPoint)} Md€ (${f(P.csg.mdParPointFourchette)}) [estimation]`, src('senat2017') + ' ; ' + src('afp')],
       ['Répartition des retraités par taux de CSG (0 / 3,8 / 6,6 / 8,3 %)', Object.values(P.csg.repartition).map((v) => v + ' %').join(' / '), src('cfdt')],
       ['Plafond / minimum de l\'abattement (revenus 2026, estimés)', `${fmt(P.abatt.plafond, 0)} € par foyer / ${P.abatt.minimum} € par personne`, src('abatt')],
@@ -293,7 +292,7 @@
       <details><summary>Comment sont calculées les économies</summary>
         <ul>
           <li><strong>Revalorisation :</strong> (inflation − revalorisation retenue) × économie par point × part de l'économie conservée avec le seuil choisi. Le coefficient est calé sur le chiffre du gouvernement (6 Md€ pour 2,1 %), qui est aussi à peu près la masse des pensions de base 2027 divisée par 100. Seuls les régimes de base sont concernés : l'Agirc-Arrco est gérée par les partenaires sociaux et suit ses propres règles.</li>
-          <li><strong>Abattement :</strong> valeurs directement issues des estimations publiées (dépense fiscale du PLF 2026, OFCE et Cour des comptes, Bercy, article 6 du PLF 2026). Les sources divergent, la fourchette est indiquée.</li>
+          <li><strong>Abattement :</strong> pour la suppression totale, valeur issue des estimations publiées (dépense fiscale du PLF 2026, OFCE et Cour des comptes, Bercy) ; les sources divergent, la fourchette est indiquée. Pour les plafonds intermédiaires, aucun chiffrage officiel n'existe : le rendement est estimé par une microsimulation simplifiée (distribution des pensions calée sur la DREES, barème 2027, quotient familial, décote, abattement des plus de 65 ans), normalisée pour que la suppression totale rapporte 5,5 Md€. Un plafond à 2 000 € par foyer touche les foyers percevant plus de 20 000 € de pensions par an.</li>
           <li><strong>CSG :</strong> (taux retenu − 8,3) × rendement d'un point, estimé à partir du précédent de 2018 (4,5 Md€ pour 1,7 point) et de l'assiette actuelle. Aucun chiffrage officiel n'existe pour cette piste.</li>
           <li>Les montants sont bruts pour les finances publiques. Un gel réduit aussi l'impôt et la CSG collectés sur les pensions : l'Institut des politiques publiques évalue cet effet retour à environ 20 %. De même, la hausse de CSG étant déductible, elle réduit un peu l'impôt sur le revenu. Ces effets ne sont pas déduits, ce qui est cohérent avec la façon dont le gouvernement présente ses 6 Md€.</li>
         </ul>
@@ -306,7 +305,6 @@
           <li>Le taux de CSG de chaque personnage découle de son revenu fiscal de référence, comme en réalité. La hausse de CSG est supposée déductible du revenu imposable, comme en 2018. Le mécanisme de lissage sur deux ans n'est pas modélisé.</li>
           <li>Supprimer l'abattement de 10 % augmente aussi le revenu fiscal de référence, dont dépendent le taux de CSG, l'exonération de taxe foncière des plus de 75 ans et diverses aides. Ces effets de seuil, décalés de deux ans, ne sont pas comptés ici : ils peuvent aggraver la perte pour certains foyers.</li>
           <li>Les montants sont en euros de 2027, par mois, arrondis à l'euro. Le total applique les trois leviers ensemble ; il peut différer d'un euro de la somme des lignes à cause des arrondis et des effets de seuil.</li>
-          <li>Le forfait de 2 000 € est appliqué ${P.abatt.forfaitParPersonne ? 'par personne' : 'par foyer'}, comme dans le projet de loi de finances pour 2026.</li>
         </ul>
       </details>
       <details><summary>Ce que le simulateur ne dit pas</summary>
@@ -323,7 +321,6 @@
   function init() {
     $('#p-inflation').textContent = fmt(P.inflation);
     $('#p-plafond').textContent = fmt(P.abatt.plafond, 0);
-    $('#p-forfait').textContent = fmt(P.abatt.forfait, 0);
     $('#revalo').max = P.inflation;
     $('#gauge').setAttribute('aria-valuemax', GAUGE_MAX);
     $('#gauge .gauge-target').style.left = (P.objectif / GAUGE_MAX * 100) + '%';
@@ -333,7 +330,7 @@
     $('#revalo').addEventListener('input', (e) => { state.revalo = parseFloat(e.target.value); render(); });
     $('#csg').addEventListener('input', (e) => { state.csg = parseFloat(e.target.value); render(); });
     $('#seuil').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; state.seuil = +b.dataset.v; syncControls(); render(); });
-    $('#abatt').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; state.abatt = b.dataset.v; syncControls(); render(); });
+    $('#abatt').addEventListener('input', (e) => { state.abatt = P.abatt.plafonds[+e.target.value]; render(); });
     $('#copy').addEventListener('click', async () => {
       const btn = $('#copy');
       try { await navigator.clipboard.writeText($('#share-url').value); btn.textContent = 'Copié !'; }

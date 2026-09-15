@@ -12,6 +12,7 @@ Tout tourne dans le navigateur, sans serveur, sans publicité, sans collecte de 
 - `style.css` : les styles, adaptés au mobile et au mode sombre.
 - `params.js` : **tous les paramètres chiffrés et leurs sources**. C'est ici que se discute la méthode.
 - `app.js` : le moteur de calcul (économies pour l'État, revenu net des personnages) et l'affichage.
+- `outils/simulation-plafond.py` : la microsimulation qui calibre le rendement des plafonds intermédiaires de l'abattement.
 
 ## Méthode
 

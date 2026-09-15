@@ -64,12 +64,10 @@
         <h3>2. Abattement de 10 % sur les pensions à l'impôt sur le revenu</h3>
         <span class="lever-gain" id="gain-abatt">0,0 Md€</span>
       </div>
-      <p class="lever-desc">Depuis 1978, 10 % de la pension est déduit avant le calcul de l'impôt, comme les frais professionnels des salariés. Il est plafonné à <span id="p-plafond"></span> € par foyer et coûte environ 5 milliards par an. Seuls les retraités imposables, environ la moitié, en profitent.</p>
-      <div class="seg seg-wide" role="group" aria-label="Abattement" id="abatt">
-        <button data-v="keep" class="on">Le maintenir</button>
-        <button data-v="forfait">Forfait de <span id="p-forfait"></span> €</button>
-        <button data-v="remove">Le supprimer</button>
-      </div>
+      <p class="lever-desc">Depuis 1978, 10 % de la pension est déduit avant le calcul de l'impôt, comme les frais professionnels des salariés. Il est plafonné à <span id="p-plafond"></span> € par foyer et coûte environ 5 milliards par an. Seuls les retraités imposables, environ la moitié, en profitent. Abaisser le plafond ne touche que les pensions les plus élevées.</p>
+      <label class="slider-label" for="abatt"><span>Plafond par foyer</span><output id="abatt-out"></output></label>
+      <input type="range" id="abatt" min="0" max="4" step="1" value="4">
+      <div class="slider-ends"><span>Supprimer</span><span>Maintenir</span></div>
       <p class="who" id="who-abatt"></p>
     </div>
 

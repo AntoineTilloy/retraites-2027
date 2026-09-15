@@ -107,34 +107,52 @@
   const GAUGE_MAX = 15; // borne haute de la jauge : un peu au-dessus du maximum atteignable
 
   const MOUTHS = {
-    m0: 'M40 65 Q50 56 60 65', m1: 'M41 63 Q50 59 59 63', m2: 'M41 62 L59 62',
-    m3: 'M41 60 Q50 67 59 60', m4: 'M39 59 Q50 71 61 59', m5: 'M38 58 Q50 74 62 58 Z',
+    m0: 'M42 63 Q50 56 58 63', m1: 'M43 62 Q50 59 57 62', m2: 'M43 61.5 L57 61.5',
+    m3: 'M43 60 Q50 65 57 60', m4: 'M41.5 59 Q50 68 58.5 59', m5: 'M41 58.5 Q50 70 59 58.5 Z',
   };
-  const BROWS = { m0: [[34, 38, 44, 34], [56, 34, 66, 38]], m1: [[34, 37, 44, 35], [56, 35, 66, 37]], m2: [[34, 36, 44, 36], [56, 36, 66, 36]],
-    m3: [[34, 35, 44, 34], [56, 34, 66, 35]], m4: [[34, 33, 44, 33], [56, 33, 66, 33]], m5: [[34, 32, 44, 31], [56, 31, 66, 32]] };
+  // sourcils : [x1, y1, x2, y2] gauche puis droit
+  const BROWS = {
+    m0: [[36, 37.5, 44, 35], [56, 35, 64, 37.5]], m1: [[36, 36.5, 44, 35.5], [56, 35.5, 64, 36.5]], m2: [[36, 36, 44, 36], [56, 36, 64, 36]],
+    m3: [[36, 35.5, 44, 35], [56, 35, 64, 35.5]], m4: [[36, 34.5, 44, 34], [56, 34, 64, 34.5]], m5: [[36, 33.5, 44, 32.5], [56, 32.5, 64, 33.5]],
+  };
 
   function ministerSvg(cls) {
     const [b1, b2] = BROWS[cls];
-    const hair = '#c4652a', beard = '#b85a22', skin = '#f3d1b3', frame = '#6b4423';
-    const extra = cls === 'm0' ? '<path d="M33 52 q-4 7 0 8 q4 -1 0 -8" fill="#7cb3ff"/><path d="M67 52 q4 7 0 8 q-4 -1 0 -8" fill="#7cb3ff"/>'
-      : cls === 'm1' ? '<path d="M74 30 q-4 6 0 8 q4 -2 0 -8" fill="#7cb3ff"/>'
-      : cls === 'm4' || cls === 'm5' ? '<circle cx="33" cy="54" r="3.5" fill="#f4a3a3" opacity=".6"/><circle cx="67" cy="54" r="3.5" fill="#f4a3a3" opacity=".6"/>' : '';
-    const stars = cls === 'm5' ? '<path d="M14 22 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z M84 14 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z" fill="#f5c542"/>' : '';
+    const hair = '#7d4a2e', hairHi = '#8f5a39', beard = '#c1602c', beardHi = '#d07a45', skin = '#f4d3b5', frame = '#4a3120', lips = '#9a4d3a';
+    const extra = cls === 'm0' ? '<path d="M35 51 q-3.5 6 0 7 q3.5 -1 0 -7" fill="#7cb3ff"/><path d="M65 51 q3.5 6 0 7 q-3.5 -1 0 -7" fill="#7cb3ff"/>'
+      : cls === 'm1' ? '<path d="M72 28 q-3.5 6 0 7.5 q3.5 -1.5 0 -7.5" fill="#7cb3ff"/>'
+      : cls === 'm4' || cls === 'm5' ? '<ellipse cx="36" cy="53" rx="3.5" ry="2.2" fill="#f2a1a1" opacity=".55"/><ellipse cx="64" cy="53" rx="3.5" ry="2.2" fill="#f2a1a1" opacity=".55"/>' : '';
+    const stars = cls === 'm5' ? '<path d="M13 20 l1.8 4.5 4.5 1.8 -4.5 1.8 -1.8 4.5 -1.8 -4.5 -4.5 -1.8 4.5 -1.8z M86 12 l1.8 4.5 4.5 1.8 -4.5 1.8 -1.8 4.5 -1.8 -4.5 -4.5 -1.8 4.5 -1.8z" fill="#f5c542"/>' : '';
     return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M12 100 V86 q0 -14 14 -18 l10 -3 h28 l10 3 q14 4 14 18 V100 Z" fill="#26375c"/>
-      <path d="M42 66 h16 l-8 20 z" fill="#fff"/>
-      <path d="M48 70 h4 l2 8 -4 14 -4 -14 z" fill="#8a2f3a"/>
-      <circle cx="50" cy="44" r="23" fill="${skin}"/>
-      <path d="M29 58 q2 14 21 15 q19 -1 21 -15 q-8 6 -21 6 q-13 0 -21 -6z" fill="${beard}"/>
-      <path d="M27 42 q0 -24 23 -24 q23 0 23 24 q-4 -12 -23 -11 q-19 -1 -23 11z" fill="${hair}"/>
-      <path d="M27 42 q-2 8 2 12 q-1 -8 2 -12z M73 42 q2 8 -2 12 q1 -8 -2 -12z" fill="${hair}"/>
-      <line x1="${b1[0]}" y1="${b1[1]}" x2="${b1[2]}" y2="${b1[3]}" stroke="${hair}" stroke-width="2.6" stroke-linecap="round"/>
-      <line x1="${b2[0]}" y1="${b2[1]}" x2="${b2[2]}" y2="${b2[3]}" stroke="${hair}" stroke-width="2.6" stroke-linecap="round"/>
-      <circle cx="41" cy="46" r="2.2" fill="#222"/><circle cx="59" cy="46" r="2.2" fill="#222"/>
-      <circle cx="41" cy="46" r="7" fill="none" stroke="${frame}" stroke-width="2"/>
-      <circle cx="59" cy="46" r="7" fill="none" stroke="${frame}" stroke-width="2"/>
-      <path d="M48 46 h4" stroke="${frame}" stroke-width="2"/><path d="M34 45 h-6 M66 45 h6" stroke="${frame}" stroke-width="1.8"/>
-      <path d="${MOUTHS[cls]}" fill="${cls === 'm5' ? '#7a2a2a' : 'none'}" stroke="#7a2a2a" stroke-width="2.4" stroke-linecap="round"/>
+      <!-- épaules, veste bleu marine, chemise, cravate -->
+      <path d="M8 100 V88 q0 -14 15 -19 l14 -5 h26 l14 5 q15 5 15 19 V100 Z" fill="#22304f"/>
+      <path d="M37 64 l13 24 l13 -24 l-4 -1 l-9 18 l-9 -18 z" fill="#f7f7f7"/>
+      <path d="M47.5 66 h5 l1.5 6 -4 12 -4 -12 z" fill="#7c2d3c"/>
+      <path d="M8 100 V88 q0 -14 15 -19 l14 -5 l6 4 l-8 32z M92 100 V88 q0 -14 -15 -19 l-14 -5 l-6 4 l8 32z" fill="#1b2741"/>
+      <!-- cou, oreilles, visage -->
+      <rect x="43" y="58" width="14" height="12" fill="#e8bf9d"/>
+      <ellipse cx="29.5" cy="45" rx="3.2" ry="4.5" fill="#edc49f"/><ellipse cx="70.5" cy="45" rx="3.2" ry="4.5" fill="#edc49f"/>
+      <ellipse cx="50" cy="43" rx="20" ry="23" fill="${skin}"/>
+      <!-- barbe courte, plus rousse que les cheveux -->
+      <path d="M30.5 46 q1 20 19.5 21 q18.5 -1 19.5 -21 q-3 10 -9 12 q-4 2 -10.5 2 q-6.5 0 -10.5 -2 q-6 -2 -9 -12z" fill="${beard}"/>
+      <path d="M37 55 q6 6 13 6 q7 0 13 -6 q-4 9 -13 9.5 q-9 -0.5 -13 -9.5z" fill="${beardHi}" opacity=".55"/>
+      <!-- cheveux courts châtain-roux, raie sur le côté -->
+      <path d="M30 40 q-1 -22 20 -22 q21 0 20 22 q-2 -9 -9 -11 q-7 -2 -14 0 q-8 1 -11 -1 q-4 2 -6 12z" fill="${hair}"/>
+      <path d="M41 21 q10 -4 22 1 q-9 -2 -18 1z" fill="${hairHi}"/>
+      <path d="M30 38 q-1.5 6 1 11 q-0.5 -6 1 -11z M70 38 q1.5 6 -1 11 q0.5 -6 -1 -11z" fill="${hair}"/>
+      <!-- sourcils, yeux, nez -->
+      <path d="M${b1[0]} ${b1[1]} Q${(b1[0] + b1[2]) / 2} ${Math.min(b1[1], b1[3]) - 1} ${b1[2]} ${b1[3]}" fill="none" stroke="${hair}" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M${b2[0]} ${b2[1]} Q${(b2[0] + b2[2]) / 2} ${Math.min(b2[1], b2[3]) - 1} ${b2[2]} ${b2[3]}" fill="none" stroke="${hair}" stroke-width="2.2" stroke-linecap="round"/>
+      <ellipse cx="41" cy="44.5" rx="1.9" ry="2.1" fill="#2b2b2b"/><ellipse cx="59" cy="44.5" rx="1.9" ry="2.1" fill="#2b2b2b"/>
+      <circle cx="41.7" cy="43.8" r=".6" fill="#fff"/><circle cx="59.7" cy="43.8" r=".6" fill="#fff"/>
+      <path d="M49 46 q-2 5 1 6.5" fill="none" stroke="#d9a883" stroke-width="1.3" stroke-linecap="round"/>
+      <!-- lunettes rondes, monture fine -->
+      <circle cx="41" cy="44.5" r="6.3" fill="none" stroke="${frame}" stroke-width="1.3"/>
+      <circle cx="59" cy="44.5" r="6.3" fill="none" stroke="${frame}" stroke-width="1.3"/>
+      <path d="M47.3 44 q2.7 -1.6 5.4 0" fill="none" stroke="${frame}" stroke-width="1.3"/>
+      <path d="M34.7 44 L31 43.3 M65.3 44 L69 43.3" stroke="${frame}" stroke-width="1.2" stroke-linecap="round"/>
+      <!-- bouche -->
+      <path d="${MOUTHS[cls]}" fill="${cls === 'm5' ? '#6e2a2a' : 'none'}" stroke="${lips}" stroke-width="2" stroke-linecap="round"/>
       ${extra}${stars}
     </svg>`;
   }

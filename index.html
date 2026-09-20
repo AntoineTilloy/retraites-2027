@@ -76,10 +76,17 @@
         <h3>3. CSG sur les pensions</h3>
         <span class="lever-gain" id="gain-csg">0,0 Md€</span>
       </div>
-      <p class="lever-desc">Les retraités aux revenus les plus élevés paient 8,3 % de CSG, contre 9,2 % pour les salariés. Les autres paient 6,6 %, 3,8 % ou rien, selon leurs revenus. Ce levier ne touche que le taux plein.</p>
+      <p class="lever-desc">Les retraités aux revenus les plus élevés paient 8,3 % de CSG, contre 9,2 % pour les salariés. Les autres paient 6,6 %, 3,8 % ou rien, selon leurs revenus.</p>
       <label class="slider-label" for="csg"><span>Taux plein de CSG</span><output id="csg-out"></output></label>
       <input type="range" id="csg" min="8.3" max="9.2" step="0.1" value="8.3">
       <div class="slider-ends"><span>8,3 % (actuel)</span><span>9,2 % (comme les salariés)</span></div>
+      <div class="sub">
+        <span class="sub-label">Retraités au taux médian de 6,6 %</span>
+        <div class="seg" role="group" aria-label="Taux médian" id="align66">
+          <button data-v="0" class="on">Maintenir 6,6 %</button>
+          <button data-v="1">Aligner sur le taux plein</button>
+        </div>
+      </div>
       <p class="who" id="who-csg"></p>
     </div>
 

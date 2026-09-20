@@ -6,13 +6,13 @@
   const eur = (n, d = 0) => (n < 0 ? '−' : n > 0 ? '+' : '') + fmt(Math.abs(n), d) + ' €';
   const pct = (n) => fmt(n, 1).replace(/,0$/, '') + ' %';
 
-  const state = { revalo: P.inflation, seuil: 0, abatt: P.abatt.plafond, csg: P.csg.tauxPlein };
+  const state = { revalo: P.inflation, seuil: 0, abatt: P.abatt.plafond, csg: P.csg.tauxPlein, align66: false };
 
   /* ---------- Macro : économies pour l'État ---------- */
   function macro(s) {
     const revalo = (P.inflation - s.revalo) * P.mdParPoint * P.partMasseAuDessus[s.seuil];
     const abatt = P.abatt.gains[s.abatt] ?? 0;
-    const csg = (s.csg - P.csg.tauxPlein) * P.csg.mdParPoint;
+    const csg = (s.csg - P.csg.tauxPlein) * P.csg.mdParPoint + (s.align66 ? (s.csg - 6.6) * P.csg.mdParPointTaux66 : 0);
     return { revalo, abatt, csg, total: revalo + abatt + csg };
   }
 
@@ -38,8 +38,10 @@
   function netFoyer(persona, s, tauxCsg) {
     const c = P.csg;
     const k = s.ref2026 ? 1 / P.indexBareme : 1;
-    const tauxCsgEff = tauxCsg === c.tauxPlein ? s.csg : tauxCsg;
-    const deductible = tauxCsg === c.tauxPlein ? c.deductible[c.tauxPlein] + (s.csg - c.tauxPlein) : c.deductible[tauxCsg];
+    // au taux plein, le curseur s'applique ; au taux 6,6 %, seulement si l'option d'alignement est choisie
+    const auTauxPlein = tauxCsg === c.tauxPlein || (tauxCsg === 6.6 && s.align66);
+    const tauxCsgEff = auTauxPlein ? s.csg : tauxCsg;
+    const deductible = auTauxPlein ? c.deductible[c.tauxPlein] + (s.csg - c.tauxPlein) : c.deductible[tauxCsg];
     let brutTotal = 0, netSocial = 0, imposable = 0, abattement = 0;
     for (const m of persona.membres) {
       const protege = s.seuil > 0 && m.brut < s.seuil;
@@ -71,7 +73,7 @@
     return { net: netSocial - ir, ir, irAvantReduction, rfr: revenuNetImposable, brut: brutTotal, netSocial };
   }
 
-  const BASE = { revalo: P.inflation, seuil: 0, abatt: P.abatt.plafond, csg: P.csg.tauxPlein };
+  const BASE = { revalo: P.inflation, seuil: 0, abatt: P.abatt.plafond, csg: P.csg.tauxPlein, align66: false };
   const REF2026 = { ...BASE, ref2026: true };
 
   function tauxCsgPersona(persona) {
@@ -192,7 +194,9 @@
     $('#who-abatt').textContent = state.abatt >= P.abatt.plafond ? 'Personne n\'est touché.'
       : state.abatt === 0 ? 'Touche uniquement les retraités imposables, d\'autant plus que leur pension et leur taux d\'imposition sont élevés. Les non-imposables ne paient rien de plus.'
       : `Touche les retraités imposables dont le foyer perçoit plus de ${fmt(state.abatt / P.abatt.taux / 12, 0)} € de pension par mois, d'autant plus qu'ils sont au-dessus. Les autres ne changent rien.`;
-    $('#who-csg').textContent = state.csg <= P.csg.tauxPlein ? 'Personne n\'est touché.'
+    const csgActif = state.csg > P.csg.tauxPlein || state.align66;
+    $('#who-csg').textContent = !csgActif ? 'Personne n\'est touché.'
+      : state.align66 ? `Touche les retraités au taux plein (${P.csg.repartition[8.3]} % d'entre eux) et ceux au taux médian de 6,6 % (${P.csg.repartition[6.6]} %), qui passent à ${pct(state.csg)} : des revenus moyens, pas seulement les plus élevés. La hausse est supposée déductible de l'impôt sur le revenu, comme en 2018.`
       : `Touche seulement les retraités au taux plein de CSG, soit ${P.csg.repartition[8.3]} % d'entre eux, ceux dont les revenus sont les plus élevés. La hausse est supposée déductible de l'impôt sur le revenu, comme en 2018, ce qui en atténue un peu le coût pour les imposables.`;
 
     renderReste(m);
@@ -228,7 +232,7 @@
       const aCompl = p.membres.some((m) => m.compl > 0);
       const whyRevalo = `pension de base ${protege && state.revalo < P.inflation ? `+${pct(P.inflation)}, protégée par le seuil` : basePct}${aCompl && state.revalo < P.inflation && !protege ? ` · complémentaire +${pct(P.revaloComplementaire)}, hors du levier` : ''}`;
       const whyAbatt = state.abatt >= P.abatt.plafond ? '' : Math.abs(r.abatt) < 0.5 ? (r.ref.ir > 0 ? 'impôt inchangé' : r.ref.irAvantReduction > 0 ? 'la réduction d\'impôt EHPAD absorbe la hausse' : 'non imposable, donc aucun effet') : 'impôt sur le revenu plus élevé';
-      const whyCsg = state.csg <= P.csg.tauxPlein ? '' : Math.abs(r.csg) < 0.5 ? `au taux de ${pct(r.tauxCsg)}, pas au taux plein` : 'CSG plus élevée, en partie déductible';
+      const whyCsg = !(state.csg > P.csg.tauxPlein || state.align66) ? '' : Math.abs(r.csg) < 0.5 ? `au taux de ${pct(r.tauxCsg)}, pas concerné` : r.tauxCsg === 6.6 ? `passe de 6,6 % à ${pct(state.csg)}, en partie déductible` : 'CSG plus élevée, en partie déductible';
       const why = (t) => (t ? `<span class="why">${t}</span>` : '');
       const pa = r.pouvoirAchat;
       const paText = Math.abs(pa) < 2 ? `Avec des prix à +${pct(P.inflation)}, le pouvoir d'achat est maintenu.`
@@ -253,7 +257,7 @@
   }
 
   function renderShare() {
-    const h = `#r=${state.revalo}&s=${state.seuil}&a=${state.abatt}&c=${state.csg}`;
+    const h = `#r=${state.revalo}&s=${state.seuil}&a=${state.abatt}&c=${state.csg}${state.align66 ? '&t=1' : ''}`;
     const url = location.origin + location.pathname + h;
     $('#share-url').value = url;
     if (location.hash !== h) history.replaceState(null, '', h);
@@ -266,6 +270,7 @@
     const a = q.get('a'); const legacy = { keep: P.abatt.plafond, remove: 0, forfait: 2000 };
     if (a in legacy) state.abatt = legacy[a]; else if (P.abatt.plafonds.includes(parseInt(a, 10))) state.abatt = parseInt(a, 10);
     const c = parseFloat(q.get('c')); if (!isNaN(c)) state.csg = Math.min(P.csg.tauxSalaries, Math.max(P.csg.tauxPlein, c));
+    state.align66 = q.get('t') === '1';  // absent dans les anciens liens : situation actuelle
   }
 
   function syncControls() {
@@ -273,6 +278,7 @@
     $('#csg').value = state.csg;
     for (const b of document.querySelectorAll('#seuil button')) b.classList.toggle('on', +b.dataset.v === state.seuil);
     $('#abatt').value = P.abatt.plafonds.indexOf(state.abatt);
+    for (const b of document.querySelectorAll('#align66 button')) b.classList.toggle('on', (b.dataset.v === '1') === state.align66);
   }
 
   /* ---------- Méthode ---------- */
@@ -282,14 +288,18 @@
     const rows = [
       ['Objectif d\'économies 2027', `${P.objectif} Md€`, src('amiel')],
       ['Hausse spontanée des dépenses des régimes de base', `${P.hausseSpontanee} Md€ (fourchette 10,5 à 12)`, src('martinot') + ' ; ' + src('ccss')],
-      ['Revalorisation légale prévue au 1er janvier 2027', `${pct(P.inflation)} (${f(P.inflationFourchette).replace('fourchette', 'fourchette').replace(/(\d),(\d)/g, '$1,$2')} %)`, src('amiel') + ' ; ' + src('ccss')],
+      ['Revalorisation légale prévue au 1er janvier 2027 (inflation hors tabac de novembre 2025 à octobre 2026)', `${pct(P.inflation)} (${f(P.inflationFourchette)} %)`, src('l16125') + ' ; ' + src('ccss') + ' ; ' + src('revalo2027')],
       ['Revalorisation de la complémentaire dans le simulateur', `${pct(P.revaloComplementaire)} (comme l'inflation) ; attendue en réalité : ${pct(P.revaloAgircAttendue)}, fourchette ${fmt(P.revaloAgircFourchette[0])} à ${fmt(P.revaloAgircFourchette[1])} %`, src('agirc')],
-      ['Économie par point de revalorisation en moins', `${fmt(P.mdParPoint)} Md€ (${f(P.mdParPointFourchette)})`, src('amiel') + ' ; ' + src('rexecode') + ' ; ' + src('plfss2026')],
+      ['Économie par point de revalorisation en moins', `${fmt(P.mdParPoint)} Md€ (${f(P.mdParPointFourchette)})`, src('ccss') + ' ; ' + src('rexecode') + ' ; ' + src('amiel')],
       ['Part de l\'économie conservée si l\'on protège les pensions sous 1 400 € / 2 000 €', `${Math.round(P.partMasseAuDessus[1400] * 100)} % / ${Math.round(P.partMasseAuDessus[2000] * 100)} % [estimation]`, src('rexecode') + ' ; ' + src('plfss2026')],
       ['Coût actuel de l\'abattement de 10 %', `${fmt(P.abatt.cout)} Md€ en 2025, ${fmt(P.abatt.beneficiaires)} millions de ménages`, src('voies')],
       ['Suppression de l\'abattement de 10 %', `${fmt(P.abatt.gains[0])} Md€ (${f(P.abatt.gainSuppressionFourchette)})`, src('ofce') + ' ; ' + src('afp')],
-      ['Abaissement du plafond à 3 000 / 2 000 / 1 000 € par foyer', `${[3000, 2000, 1000].map((v) => fmt(P.abatt.gains[v])).join(' / ')} Md€ [estimation]`, src('drees2025') + ' ; ' + src('plf2026')],
+      ['Abaissement du plafond à 3 000 € par foyer', `${fmt(P.abatt.gains[3000])} Md€ (chiffrage du gouvernement)`, src('plafond3000')],
+      ['Abaissement du plafond à 2 000 / 1 000 € par foyer', `${[2000, 1000].map((v) => fmt(P.abatt.gains[v])).join(' / ')} Md€ [estimation]`, src('drees2025') + ' ; ' + src('plf2026')],
+      ['Effet de trésorerie de la suppression la première année', `environ ${fmt(P.abatt.effetTresorerie, 2)} fois le rendement annuel [estimation]`, src('pas')],
       ['Rendement d\'un point de CSG au taux plein', `${fmt(P.csg.mdParPoint)} Md€ (${f(P.csg.mdParPointFourchette)}) [estimation]`, src('senat2017') + ' ; ' + src('afp')],
+      ['Rendement d\'un point de CSG sur le taux médian (6,6 %)', `${fmt(P.csg.mdParPointTaux66)} Md€ (${f(P.csg.mdParPointTaux66Fourchette)}) [estimation]`, src('drees2025')],
+      ['Coût de l\'ensemble des taux réduits de CSG (0, 3,8 et 6,6 %)', `de l'ordre de ${P.csg.coutTauxReduits} Md€ par an [estimation]`, src('cfdt')],
       ['Répartition des retraités par taux de CSG (0 / 3,8 / 6,6 / 8,3 %)', Object.values(P.csg.repartition).map((v) => v + ' %').join(' / '), src('cfdt')],
       ['Plafond / minimum de l\'abattement (revenus 2026, estimés)', `${fmt(P.abatt.plafond, 0)} € par foyer / ${P.abatt.minimum} € par personne`, src('abatt')],
       ['Seuils de RFR pour la CSG, 1 part (2027, estimés)', P.csg.seuils[1].map((v) => fmt(v, 0) + ' €').join(' / '), src('dss')],
@@ -308,9 +318,10 @@
       ${rows.map((r) => `<li><span class="pn">${r[0]}</span><span class="pv">${r[1]}</span>${r[2] ? `<span class="ps">Source : ${r[2]}</span>` : ''}</li>`).join('')}</ul></details>
       <details><summary>Comment sont calculées les économies</summary>
         <ul>
-          <li><strong>Revalorisation :</strong> (inflation − revalorisation retenue) × économie par point × part de l'économie conservée avec le seuil choisi. Le coefficient est calé sur le chiffre du gouvernement (6 Md€ pour 2,1 %), qui est aussi à peu près la masse des pensions de base 2027 divisée par 100. Seuls les régimes de base sont concernés : l'Agirc-Arrco est gérée par les partenaires sociaux et suit ses propres règles.</li>
-          <li><strong>Abattement :</strong> pour la suppression totale, valeur issue des estimations publiées (dépense fiscale du PLF 2026, OFCE et Cour des comptes, Bercy) ; les sources divergent, la fourchette est indiquée. Pour les plafonds intermédiaires, aucun chiffrage officiel n'existe : le rendement est estimé par une microsimulation simplifiée (distribution des pensions calée sur la DREES, barème 2027, quotient familial, décote, abattement des plus de 65 ans), normalisée pour que la suppression totale rapporte 5,5 Md€. Un plafond à 2 000 € par foyer touche les foyers percevant plus de 20 000 € de pensions par an.</li>
-          <li><strong>CSG :</strong> (taux retenu − 8,3) × rendement d'un point, estimé à partir du précédent de 2018 (4,5 Md€ pour 1,7 point) et de l'assiette actuelle. Aucun chiffrage officiel n'existe pour cette piste.</li>
+          <li><strong>Revalorisation :</strong> (revalorisation légale − revalorisation retenue) × économie par point × part de l'économie conservée avec le seuil choisi. La revalorisation légale de janvier 2027 est l'inflation hors tabac de novembre 2025 à octobre 2026, prévue à 1,7 % ; l'économie par point est la masse des pensions de base 2027 (environ 315 Md€) divisée par 100. Seuls les régimes de base sont concernés : l'Agirc-Arrco est gérée par les partenaires sociaux et suit ses propres règles.</li>
+          <li><strong>Abattement :</strong> pour la suppression totale, valeur issue des estimations publiées (dépense fiscale du PLF 2026, OFCE et Cour des comptes, Bercy) ; les sources divergent, la fourchette est indiquée. Pour les plafonds intermédiaires, aucun chiffrage officiel n'existe : le rendement est estimé par une microsimulation simplifiée (distribution des pensions calée sur la DREES, barème 2027, quotient familial, décote, abattement des plus de 65 ans), normalisée pour que la suppression totale rapporte 5,5 Md€. Le point à 3 000 € est le chiffrage du gouvernement (1,4 Md€, 19 septembre 2026) ; les points intermédiaires suivent la forme de la microsimulation, recalée dessus. Un plafond à 2 000 € par foyer touche les foyers percevant plus de 20 000 € de pensions par an.</li>
+          <li><strong>Première année :</strong> si la suppression s'applique dès les revenus 2026, l'État encaisse en 2027 le solde de l'impôt 2026 sans abattement et, à partir de septembre, un prélèvement à la source relevé sur les revenus 2027 : environ un tiers d'année en plus, soit 7 à 7,5 Md€ la première année pour une suppression totale. C'est un effet de trésorerie, non reconduit ; la jauge affiche le rendement durable.</li>
+          <li><strong>CSG :</strong> (taux retenu − 8,3) × rendement d'un point, estimé à partir du précédent de 2018 (4,5 Md€ pour 1,7 point) et de l'assiette actuelle. Aucun chiffrage officiel n'existe pour cette piste. L'option d'alignement du taux médian ajoute (taux retenu − 6,6) × l'assiette des pensions au taux 6,6 %, estimée à 100 Md€ par microsimulation. Les taux réduits de CSG (0, 3,8 et 6,6 %) coûtent au total de l'ordre de 9 Md€ par an ; le simulateur ne touche pas aux taux 0 et 3,8 %.</li>
           <li>Les montants sont bruts pour les finances publiques. Un gel réduit aussi l'impôt et la CSG collectés sur les pensions : l'Institut des politiques publiques évalue cet effet retour à environ 20 %. De même, la hausse de CSG étant déductible, elle réduit un peu l'impôt sur le revenu. Ces effets ne sont pas déduits, ce qui est cohérent avec la façon dont le gouvernement présente ses 6 Md€.</li>
         </ul>
       </details>
@@ -318,7 +329,7 @@
         <ul>
           <li>Pour chaque foyer, on calcule le revenu net annuel après CSG, CRDS, CASA, cotisation maladie de 1 % sur la complémentaire et impôt sur le revenu (abattement de 10 %, abattement des plus de 65 ans, barème, quotient familial, décote, réduction d'impôt EHPAD). Le point de départ est la pension nette de 2026. Les trois lignes se lisent dans l'ordre : d'abord la revalorisation, puis l'abattement, puis la CSG ; elles s'additionnent exactement au total.</li>
           <li>La complémentaire (Agirc-Arrco) ne dépend pas du curseur : elle est supposée suivre l'inflation, pour isoler l'effet des leviers. En réalité, sa règle (accord de 2023 : inflation moins 0,4 point) devrait donner environ ${pct(P.revaloAgircAttendue)} en novembre 2026, soit une petite perte supplémentaire sur cette part, quel que soit le choix du gouvernement.</li>
-          <li>La petite ligne sous chaque total compare l'évolution de la pension nette à l'inflation de ${pct(P.inflation)} : c'est l'évolution du pouvoir d'achat.</li>
+          <li>La petite ligne sous chaque total compare l'évolution de la pension nette à l'inflation de référence de ${pct(P.inflation)} : c'est l'évolution du pouvoir d'achat. L'inflation réellement vécue en 2027 pourra différer de cette référence, qui est celle de la loi.</li>
           <li>La situation 2026 est calculée avec les règles 2026 ; la situation 2027 avec le barème et les plafonds indexés de 2 % comme annoncé, les textes pour 2027 n'étant pas encore déposés. Ainsi, une pension indexée sur l'inflation garde à peu près son pouvoir d'achat, comme en réalité.</li>
           <li>La revalorisation ne s'applique qu'à la pension de base de chacun. Le seuil de protection s'apprécie sur la pension brute totale de la personne.</li>
           <li>Le taux de CSG de chaque personnage découle de son revenu fiscal de référence, comme en réalité. La hausse de CSG est supposée déductible du revenu imposable, comme en 2018. Le mécanisme de lissage sur deux ans n'est pas modélisé.</li>
@@ -330,6 +341,7 @@
         <ul>
           <li>Une sous-indexation n'est pas une baisse en euros. C'est une perte de pouvoir d'achat, mais elle est permanente : elle se retrouve chaque année suivante, et se cumule si la mesure est reconduite.</li>
           <li>Les tarifs des EHPAD, les loyers et les prix, eux, continuent d'augmenter. C'est ce qui rend la sous-indexation plus lourde pour ceux dont le budget est déjà tendu.</li>
+          <li>L'objectif de 6 Md€ est celui annoncé par le ministre des Comptes publics le 11 septembre 2026. Le 17 septembre, le Premier ministre a indiqué que l'effort demandé aux retraités serait « inférieur à 6 milliards » ; la jauge garde 6 comme repère tant qu'aucun chiffre n'est arrêté.</li>
           <li>Le simulateur ne prend pas parti sur ce qu'il faudrait faire. Il ne modélise pas non plus d'autres options (hausse de cotisations, autres recettes, économies ailleurs) que le débat pourrait retenir.</li>
         </ul>
       </details>
@@ -350,6 +362,7 @@
     $('#csg').addEventListener('input', (e) => { state.csg = parseFloat(e.target.value); render(); });
     $('#seuil').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; state.seuil = +b.dataset.v; syncControls(); render(); });
     $('#abatt').addEventListener('input', (e) => { state.abatt = P.abatt.plafonds[+e.target.value]; render(); });
+    $('#align66').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; state.align66 = b.dataset.v === '1'; syncControls(); render(); });
     $('#copy').addEventListener('click', async () => {
       const btn = $('#copy');
       try { await navigator.clipboard.writeText($('#share-url').value); btn.textContent = 'Copié !'; }

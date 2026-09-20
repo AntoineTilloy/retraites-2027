@@ -5,15 +5,18 @@ const P = {
   annee: 2027,
   objectif: 6,               // Md€ : économies visées par le gouvernement sur les retraites en 2027 (Amiel, 11/09/2026)
   hausseSpontanee: 12,       // Md€ : hausse spontanée des dépenses des régimes de base (Martinot ; fourchette 10,5 à 12)
-  inflation: 2.1,            // % : revalorisation légale prévue au 1er janvier 2027 (Bercy sept. 2026 ; CCSS mai 2026 : 1,6)
-  inflationFourchette: [1.6, 2.1],
-  revaloComplementaire: 2.1,  // % : la complémentaire est supposée suivre l'inflation, pour isoler l'effet des leviers.
+  // Revalorisation légale au 1er janvier 2027 = inflation hors tabac moyenne de novembre 2025 à octobre 2026 (art. L.161-25 CSS).
+  // Prévision : 1,6 % (CCSS, mai 2026) à 1,7 % (prévisions de septembre 2026). Les 2,1 % cités par Bercy sont l'inflation annuelle 2026,
+  // qui sert au barème de l'impôt, pas aux pensions.
+  inflation: 1.7,
+  inflationFourchette: [1.6, 2.0],
+  revaloComplementaire: 1.7,  // % : la complémentaire est supposée suivre la même référence, pour isoler l'effet des leviers.
   revaloAgircAttendue: 1.6,   // % : en réalité, revalorisation Agirc-Arrco attendue au 1er novembre 2026 (inflation − 0,4 point ; fourchette 1,2 à 2,0)
   revaloAgircFourchette: [1.2, 2.0],
 
   // Levier 1 : revalorisation des pensions de base
-  mdParPoint: 2.9,           // Md€ par point de revalorisation en moins : 6 Md€ pour 2,1 % selon Bercy
-  mdParPointFourchette: [2.2, 3.5],   // PLFSS 2026 annexe 3 (2,2) à Rexecode (3,5) ; masse 2027 ≈ 315 Md€ → 3,0 [estimation]
+  mdParPoint: 3.2,           // Md€ par point de revalorisation en moins : masse des pensions de base 2027 ≈ 315 Md€ (CCSS) → 3,15 ; Rexecode 3,5 ; Bercy 2,9 (6 Md€ / 2,1)
+  mdParPointFourchette: [2.9, 3.5],
   // Part de l'économie conservée si l'on protège les pensions sous un seuil (brut mensuel) :
   // gel > 2 000 € = 2,9 Md€ (Rexecode) sur un gel total de 6 à 7 Md€ ; gel > 1 400 € ≈ 4 Md€ [estimation Sénat/PLFSS 2026]
   partMasseAuDessus: { 0: 1, 1400: 0.67, 2000: 0.45 },
@@ -26,7 +29,11 @@ const P = {
     // Md€ économisés selon le plafond retenu. 0 = suppression totale (Cour des comptes / OFCE 4,5 ; Bercy 5,7 ; retenu 5,5).
     // Plafonds intermédiaires : [estimation] microsimulation simplifiée (distribution des pensions calée sur la DREES,
     // barème 2027, abattement des plus de 65 ans, décote), normalisée pour que la suppression totale rapporte 5,5 Md€.
-    gains: { 0: 5.5, 1000: 3.9, 2000: 2.4, 3000: 1.1, 4528: 0 },
+    // Le point 3 000 € est le chiffrage gouvernemental (1,4 Md€, 19/09/2026) ; les points 2 000 et 1 000 € suivent la forme de la microsimulation, recalée sur ce point.
+    gains: { 0: 5.5, 1000: 4.1, 2000: 2.7, 3000: 1.4, 4528: 0 },
+    // Effet de trésorerie la première année : si la mesure s'applique dès les revenus 2026, l'État encaisse en 2027 le solde de l'impôt 2026
+    // et, à partir de septembre, un prélèvement à la source relevé sur les revenus 2027, soit environ 4/12 d'année en plus [estimation].
+    effetTresorerie: 1.33,
     gainSuppressionFourchette: [4.5, 5.7],
     cout: 5.3,                          // Md€ : dépense fiscale n° 120401, prévision 2025 (Voies et moyens, PLF 2026)
     beneficiaires: 15.1,                // millions de ménages (Voies et moyens)
@@ -36,6 +43,10 @@ const P = {
   csg: {
     tauxPlein: 8.3, tauxSalaries: 9.2,
     mdParPoint: 3.3, mdParPointFourchette: [2.2, 3.9],  // alignement 8,3 → 9,2 : 2 à 3,5 Md€ ; précédent 2018 : 4,5 Md€ pour 1,7 point
+    // Option : aligner le taux médian (6,6 %) sur le taux plein. Assiette des pensions au taux 6,6 % ≈ 100 Md€ [estimation par microsimulation],
+    // soit 1,0 Md€ par point. Le coût de l'ensemble des taux réduits (0, 3,8 et 6,6 %) est de l'ordre de 9 Md€ par an.
+    mdParPointTaux66: 1.0, mdParPointTaux66Fourchette: [0.8, 1.2],
+    coutTauxReduits: 9,
     repartition: { 0: 29, 3.8: 15, 6.6: 27, 8.3: 29 },  // % des retraités du régime général par taux (2024)
     // seuils de revenu fiscal de référence : [exonération, taux 3,8 %, taux 6,6 %], au-delà taux plein
     // 2026 (instruction DSS 11/12/2025) : 1 part 13 048 / 17 057 / 26 472 ; 2 parts 20 016 / 26 167 / 40 604. Ici indexés de 0,9 % pour 2027 [estimation]
@@ -84,6 +95,10 @@ const P = {
   ],
 
   sources: [
+    { id: 'l16125', titre: "Article L.161-25 du code de la Sécurité sociale : revalorisation sur l'inflation hors tabac des douze derniers mois connus", url: 'https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000041399010' },
+    { id: 'revalo2027', titre: "Prévision de revalorisation au 1er janvier 2027 : 1,6 % (CCSS, mai 2026) à 1,7 % (septembre 2026)", url: 'https://placement.meilleurtaux.com/retraite/actualites/2026-juin/retraites-vers-une-hausse-de-1-6-en-janvier-2027.html' },
+    { id: 'plafond3000', titre: "19 septembre 2026 : le gouvernement propose de ramener le plafond de l'abattement à 3 000 €, pour 1,4 Md€ ; le Premier ministre évoque un effort « inférieur à 6 milliards »", url: 'https://renseignementeconomique.fr/budget-2027-le-plafond-de-l-abattement-de-10-des-retraites-ramene-a-3-000-et-piste-de-gel-des-pensions' },
+    { id: 'pas', titre: "impots.gouv : le taux de prélèvement à la source est actualisé chaque année en septembre à partir de la dernière déclaration", url: 'https://www.impots.gouv.fr/particulier/questions/comment-mon-taux-de-prelevement-la-source-est-il-calcule' },
     { id: 'amiel', titre: "David Amiel, ministre des Comptes publics, 11 septembre 2026 : l'indexation coûte 6 Md€, l'abattement de 10 % en vaut autant (Moneyvox)", url: 'https://www.moneyvox.fr/retraite/actualites/110346/budget-2027-abattement-de-10-ou-indexation-des-retraites-le-gouvernement-veut-faire-un-choix' },
     { id: 'afp', titre: "AFP, 14 septembre 2026 : gel, fin de l'abattement (5,7 Md€ selon Bercy), hausse de la CSG, les pistes pour trouver 6 Md€", url: 'https://www.moneyvox.fr/retraite/actualites/110372/retraites-gel-fin-de-abattement-hausse-de-la-csg-comment-executif-espere-trouver-6-milliards-euros' },
     { id: 'martinot', titre: "Bertrand Martinot, 13 septembre 2026 : hausse spontanée de 12 Md€ des dépenses de retraite en 2027", url: 'https://econostrum.info/retraites-desindexation-ou-suppression-de-labattement/' },
